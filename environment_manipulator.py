@@ -11,6 +11,10 @@ and bringing it to rest at a desired location. This will be accomplished as foll
         1) Should I train separate policies to accomplish each sub-task? Then, the moment the debris is 
            captured I could switch from policy 1 to policy 2? **Leaning towards this** 
               - Should I have to completely separate environments?? Probably!!
+			  - The only problem is that there won't be continuity between the environments. Maybe I should 
+			    capture with a certain speed to ease the detumbling???! I can imagine an optimal path having
+				both goals in mind. Maybe a flag is what I'll need. Either way, let's just build the first 
+				phase first.
         2) Should one policy be responsible for it all? With a flag saying if the target was 
            captured yet? Or maybe even without a flag?
 
