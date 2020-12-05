@@ -99,31 +99,59 @@ class Environment:
         ##################################
         ##### Environment Properties #####
         ##################################
-        START HERE
-        self.TOTAL_STATE_SIZE         = 18 # [relative_x, relative_y, relative_vx, relative_vy, relative_angle, relative_angular_velocity, chaser_x, chaser_y, chaser_theta, target_x, target_y, target_theta, chaser_vx, chaser_vy, chaser_omega, target_vx, target_vy, target_omega] *# Relative pose expressed in the chaser's body frame; everythign else in Inertial frame #*
+        """
+        ==The State==
+        what states do I need? Relative is good, but I think I need some absolute especially for the part where I'll bring the assembly to a desired location. 
+        I'll use absolute since I'll be getting my data from PhaseSpace.
+        I've got the manipulator angles along with the end-effector position. It is redundant to have the position if I've got the angles but maybe it'll help??
+        
+        The positions are in inertial frame but the manipulator angles are in the joint frame.
+        
+        """
+        self.TOTAL_STATE_SIZE         = 22 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, shoulder_theta_dot, elbow_theta, elbow_theta_dot, wrist_theta, wrist_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot]
         ### Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
         #         TOTAL_STATE is returned from the environment to the agent.
         #         A subset of the TOTAL_STATE, called the 'observation', is passed to the policy network to calculate acitons. This takes place in the agent
         #         The TOTAL_STATE is passed to the animator below to animate the motion.
         #         The chaser and target state are contained in the environment. They are packaged up before being returned to the agent.
         #         The total state information returned must be as commented beside self.TOTAL_STATE_SIZE.
-        self.IRRELEVANT_STATES                = [6,7,8,9,10,11,12,13,14,15,16,17] # indices of states who are irrelevant to the policy network
+        self.IRRELEVANT_STATES                = [] # indices of states who are irrelevant to the policy network
         self.OBSERVATION_SIZE                 = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
-        self.ACTION_SIZE                      = 3 # [x_dot_dot, y_dot_dot, theta_dot_dot] in the BODY frame
+        self.ACTION_SIZE                      = 6 # [x_dot_dot, y_dot_dot, theta_dot_dot, shoulder_theta_dot_dot, elbow_theta_dot_dot, wrist_theta_dot_dot] in the inertial frame (for x and y), in the joint frame for the others.
+        self.MAX_X_POSITION                   = 3.7 # [m]
+        self.MAX_Y_POSITION                   = 2.4 # [m]
         self.MAX_VELOCITY                     = 0.5 # [m/s]
-        self.MAX_ANGULAR_VELOCITY             = np.pi/6 # [rad/s]
-        self.LOWER_ACTION_BOUND               = np.array([-0.025, -0.025, -0.1]) # [m/s^2, m/s^2, rad/s^2]
-        self.UPPER_ACTION_BOUND               = np.array([ 0.025,  0.025,  0.1]) # [m/s^2, m/s^2, rad/s^2]
-        self.LOWER_STATE_BOUND                = np.array([-3., -3., -self.MAX_VELOCITY, -self.MAX_VELOCITY, -2*np.pi, -self.MAX_ANGULAR_VELOCITY, -3., -3., -2*np.pi, -3., -3., -2*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY]) # [m, m, m/s, m/s, rad, rad/s, m, m, rad, m, m, rad, m/s, m/s, rad/s, m/s, m/s, rad/s] // lower bound for each element of TOTAL_STATE
-        self.UPPER_STATE_BOUND                = np.array([ 3.,  3.,  self.MAX_VELOCITY,  self.MAX_VELOCITY,  2*np.pi,  self.MAX_ANGULAR_VELOCITY,  3.,  3.,  2*np.pi,  3.,  3.,  2*np.pi,  self.MAX_VELOCITY,  self.MAX_VELOCITY,  self.MAX_ANGULAR_VELOCITY,  self.MAX_VELOCITY,  self.MAX_VELOCITY,  self.MAX_ANGULAR_VELOCITY]) # [m, m, m,s, m,s, rad, rad/s, m, m, rad, m, m, rad, m/s, m/s, rad/s, m/s, m/s, rad/s] // upper bound for each element of TOTAL_STATE
+        self.MAX_ANGULAR_VELOCITY             = np.pi/6 # [rad/s] for joints or body
+        self.MAX_LINEAR_ACCELERATION          = 0.025 # [m/s^2]
+        self.MAX_ANGULAR_ACCELERATION         = 0.1 # [rad/s^2]
+        self.LOWER_ACTION_BOUND               = np.array([-self.MAX_LINEAR_ACCELERATION, -self.MAX_LINEAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
+        self.UPPER_ACTION_BOUND               = np.array([ self.MAX_LINEAR_ACCELERATION,  self.MAX_LINEAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
+        
+        
+        self.LOWER_STATE_BOUND                = np.array([ 0.0, 0.0, -2*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY,  # Chaser 
+                                                          -np.pi/2, -self.MAX_ANGULAR_VELOCITY, # Shoulder
+                                                          -np.pi/2, -self.MAX_ANGULAR_VELOCITY, # Elbow
+                                                          -np.pi/2, -self.MAX_ANGULAR_VELOCITY, # Wrist
+                                                          0.0, 0.0, -3*self.MAX_VELOCITY, -3*self.MAX_VELOCITY,  # End-effector
+                                                          0.0, 0.0, -2*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY]) # Target [m, m, rad, m/s, m/s, rad/s, rad, rad/s, rad, rad/s, rad, rad/s, m, m, m/s, m/s, m, m, rad, m/s, m/s, rad/s] // lower bound for each element of TOTAL_STATE
+        self.UPPER_STATE_BOUND                = np.array([ 3.7, 2.4, 2*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY,  # Chaser 
+                                                           np.pi/2, self.MAX_ANGULAR_VELOCITY, # Shoulder
+                                                           np.pi/2, self.MAX_ANGULAR_VELOCITY, # Elbow
+                                                           np.pi/2, self.MAX_ANGULAR_VELOCITY, # Wrist
+                                                           0.0, 0.0, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY,  # End-effector
+                                                           0.0, 0.0, 2*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY]) # Target [m, m, rad, m/s, m/s, rad/s, rad, rad/s, rad, rad/s, rad, rad/s, m, m, m/s, m/s, m, m, rad, m/s, m/s, rad/s] // lower bound for each element of TOTAL_STATE
         self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.2, 0.0]) # [m, m, rad]
         self.INITIAL_CHASER_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
+        self.INITIAL_ARM_ANGLES               = np.array([0.0, 0.0, 0.0]) # [rad, rad, rad[
+        self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
         self.INITIAL_TARGET_POSITION          = np.array([2.0, 1.0, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
-        self.RANDOMIZE                        = False # whether or not to RANDOMIZE the state & target location
+        self.RANDOMIZE_INITIAL_CONDITIONS     = False # whether or not to randomize the initial conditions
+        self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
         self.RANDOMIZATION_LENGTH             = 0.5 # [m] standard deviation of position randomization
         self.RANDOMIZATION_ANGLE              = np.pi/2 # [rad] standard deviation of angular randomization
+        self.RANDOMIZATION_ARM_ANGLE          = np.pi/4 # [rad] standard deviation of arm angular randomization
         self.RANDOMIZATION_TARGET_VELOCITY    = 0.0 # [m/s] standard deviation of the target's velocity randomization
         self.RANDOMIZATION_TARGET_OMEGA       = 0.0 # [rad/s] standard deviation of the target's angular velocity randomization
         self.MIN_V                            = -100.
@@ -136,19 +164,34 @@ class Environment:
         self.MAX_NUMBER_OF_TIMESTEPS          = 150 # per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
-
-        # Physical properties
-        self.LENGTH                        = 0.3  # [m] side length
-        self.MASS                          = 10.0   # [kg] for chaser
+        self.KI                               = [10, 10, 0.05, 0.05, 0.05, 0.05] # Integral gain for the integral-linear acceleration controller in [X, Y, angle, shoulder, elbow, wrist] (how fast does the commanded acceleration get realized)
+        
+        # Platform physical properties
+        self.LENGTH                        = 0.3 # [m] side length
+        self.LENGTH_RANDOMIZATION          = 0.1 # [m] standard deviation of the LENGTH randomization when domain randomization is performed.
+        self.MASS                          = 10.0  # [kg] for chaser
+        self.MASS_RANDOMIZATION            = 1.0 # [kg] standard deviation of the MASS randomization when domain randomization is performed.
         self.INERTIA                       = 1/12*self.MASS*(self.LENGTH**2 + self.LENGTH**2) # 0.15 [kg m^2]
         self.DOCKING_PORT_MOUNT_POSITION   = np.array([0, self.LENGTH/2]) # position of the docking cone on the target in its body frame
         self.DOCKING_PORT_CORNER1_POSITION = self.DOCKING_PORT_MOUNT_POSITION + [ 0.05, 0.1] # position of the docking cone on the target in its body frame
         self.DOCKING_PORT_CORNER2_POSITION = self.DOCKING_PORT_MOUNT_POSITION + [-0.05, 0.1] # position of the docking cone on the target in its body frame
-        self.ARM_MOUNT_POSITION            = np.array([0, self.LENGTH/2]) # [m] position of the arm mounting point on the chaser in the body frame
-        self.SHOULDER_POSITION             = self.ARM_MOUNT_POSITION + [0, 0.05] # [m] position of the arm's shoulder in the chaser body frame
-        self.ELBOW_POSITION                = self.SHOULDER_POSITION + [0.3*np.sin(np.pi/6), 0.3*np.cos(np.pi/6)] # [m] position of the arm's elbow in the chaser body frame
-        self.WRIST_POSITION                = self.ELBOW_POSITION + [0.3*np.sin(np.pi/4),-0.3*np.cos(np.pi/4)] # [m] position of the arm's wrist in the chaser body frame
-        self.END_EFFECTOR_POSITION         = self.WRIST_POSITION + [0.1, 0] # po sition of the optimally-deployed end-effector on the chaser in the body frame
+                
+        # Arm physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
+        self.PHI      = np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
+        self.B0       = (self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
+        self.M1       = 1 # [kg] link mass
+        self.M2       = 1 # [kg] link mass
+        self.M3       = 1 # [kg] link mass
+        self.A1       = 0.1 # [m] base of link to centre of mass
+        self.B1       = 0.1 # [m] centre of mass to end of link
+        self.A2       = 0.1 # [m] base of link to centre of mass
+        self.B2       = 0.1 # [m] centre of mass to end of link
+        self.A3       = 0.1 # [m] base of link to centre of mass
+        self.B3       = 0.1 # [m] centre of mass to end of link
+        self.INERTIA  = 1/12*self.MASS*(self.LENGTH**2 + self.LENGTH**2) # 0.15 [kg m^2] base inertia
+        self.INERTIA1 = 1/12*self.M1*(self.A1 + self.B1)**2 # [kg m^2] link inertia
+        self.INERTIA2 = 1/12*self.M2*(self.A2 + self.B2)**2 # [kg m^2] link inertia
+        self.INERTIA3 = 1/12*self.M3*(self.A3 + self.B3)**2 # [kg m^2] link inertia        
         
         # Reward function properties
         self.DOCKING_REWARD                   = 100 # A lump-sum given to the chaser when it docks
@@ -163,41 +206,13 @@ class Environment:
         self.CHECK_END_EFFECTOR_COLLISION     = True # Whether to do collision detection on the end-effector
         self.CHECK_END_EFFECTOR_FORBIDDEN     = True # Whether to expand the collision area to include the forbidden zone
         self.END_EFFECTOR_COLLISION_PENALTY   = 2 # [rewards/timestep] Penalty for end-effector collisions (with target or optionally with the forbidden zone)
-        
-        # Test time properties
-        self.TEST_ON_DYNAMICS            = True # Whether or not to use full dynamics along with a PD controller at test time
-        self.KINEMATIC_NOISE             = False # Whether or not to apply noise to the kinematics in order to simulate a poor controller
-        self.KINEMATIC_POSITION_NOISE_SD = [0.2, 0.2, 0.2] # The standard deviation of the noise that is to be applied to each position element in the state
-        self.KINEMATIC_VELOCITY_NOISE_SD = [0.1, 0.1, 0.1] # The standard deviation of the noise that is to be applied to each velocity element in the state
-        self.FORCE_NOISE_AT_TEST_TIME    = False # [Default -> False] Whether or not to force kinematic noise to be present at test time
-        self.KI                          = [10, 10, 0.05] # Integral gain for the integral-linear acceleration controller in [X, Y, and angle] (how fast does the commanded acceleration get realized)
-        
-        # Physical properties
-        self.LENGTH   = 0.3  # [m] side length of spacecraft base
-        self.PHI      = np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
-        self.B0       = (self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
-        self.MASS     = 10   # [kg]
-        self.M1       = 1 # [kg] link mass
-        self.M2       = 1 # [kg] link mass
-        self.M3       = 1 # [kg] link mass
-        self.A1       = 0.1 # [m] base of link to centre of mass
-        self.B1       = 0.1 # [m] centre of mass to end of link
-        self.A2       = 0.1 # [m] base of link to centre of mass
-        self.B2       = 0.1 # [m] centre of mass to end of link
-        self.A3       = 0.1 # [m] base of link to centre of mass
-        self.B3       = 0.1 # [m] centre of mass to end of link
-        self.INERTIA  = 1/12*self.MASS*(self.LENGTH**2 + self.LENGTH**2) # 0.15 [kg m^2] base inertia
-        self.INERTIA1 = 1/12*self.M1*(self.A1 + self.B1)**2 # [kg m^2] link inertia
-        self.INERTIA2 = 1/12*self.M2*(self.A2 + self.B2)**2 # [kg m^2] link inertia
-        self.INERTIA3 = 1/12*self.M3*(self.A3 + self.B3)**2 # [kg m^2] link inertia
-        
-        
+
         
         # Some calculations that don't need to be changed
-        self.VELOCITY_LIMIT           = np.array([self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY]) # [m/s, m/s, rad/s] maximum allowable velocity/angular velocity; a hard cap is enforced if this velocity is exceeded in kinematics & the controller enforces the limit in dynamics & experiment
-        self.LOWER_STATE_BOUND        = np.concatenate([self.LOWER_STATE_BOUND, np.tile(self.LOWER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # lower bound for each element of TOTAL_STATE
-        self.UPPER_STATE_BOUND        = np.concatenate([self.UPPER_STATE_BOUND, np.tile(self.UPPER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # upper bound for each element of TOTAL_STATE        
-        self.OBSERVATION_SIZE         = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
+        self.VELOCITY_LIMIT    = np.array([self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY]) # [m/s, m/s, rad/s] maximum allowable velocity/angular velocity; a hard cap is enforced if this velocity is exceeded in kinematics & the controller enforces the limit in dynamics & experiment
+        self.LOWER_STATE_BOUND = np.concatenate([self.LOWER_STATE_BOUND, np.tile(self.LOWER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # lower bound for each element of TOTAL_STATE
+        self.UPPER_STATE_BOUND = np.concatenate([self.UPPER_STATE_BOUND, np.tile(self.UPPER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # upper bound for each element of TOTAL_STATE        
+        self.OBSERVATION_SIZE  = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
 
 
     ###################################
@@ -210,14 +225,11 @@ class Environment:
     ######################################
     ##### Resettings the Environment #####
     ######################################
-    def reset(self, use_dynamics, test_time):
-        # This method resets the state and returns it
+    def reset(self, test_time):
+        # This method resets the state
         """ NOTES:
-               - if use_dynamics = True -> use dynamics
                - if test_time = True -> do not add "controller noise" to the kinematics
         """
-        # Setting the default to be kinematics
-        self.dynamics_flag = False
 
         # Logging whether it is test time for this episode
         self.test_time = test_time
@@ -252,9 +264,6 @@ class Environment:
         # Initializing the previous velocity and control effort for the integral-acceleration controller
         self.previous_velocity = np.zeros(len(self.INITIAL_CHASER_VELOCITY))
         self.previous_control_effort = np.zeros(self.ACTION_SIZE)
-                
-        if use_dynamics:            
-            self.dynamics_flag = True # for this episode, dynamics will be used
 
         # Resetting the time
         self.time = 0.
