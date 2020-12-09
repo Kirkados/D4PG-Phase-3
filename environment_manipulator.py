@@ -64,6 +64,9 @@ Reward system:
             - penalty for end-effector angle (so it goes into the docking cone properly)
             - penalty for relative velocity during the docking (so the end-effector doesn't jab the docking cone)
         - A penalty for colliding with the target
+        Once learned, some optional rewards can be applied to see how it affects the motion:
+            - In the future, a penalty for attitude disturbance on the chaser base attitude??? Or a penalty to all accelerations??
+            - Extend the forbidden area into a larger cone to force the approach to be more cone-shaped
 
 State clarity:
     - Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
@@ -149,9 +152,12 @@ class Environment:
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
         self.RANDOMIZE_INITIAL_CONDITIONS     = False # whether or not to randomize the initial conditions
         self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
-        self.RANDOMIZATION_LENGTH             = 0.5 # [m] standard deviation of position randomization
-        self.RANDOMIZATION_ANGLE              = np.pi/2 # [rad] standard deviation of angular randomization
+        self.RANDOMIZATION_POSITION           = 0.5 # [m] standard deviation of position randomization
+        self.RANDOMIZATION_CHASER_VELOCITY    = 0.1 # [m/s] standard deviation of chaser velocity randomization
+        self.RANDOMIZATION_CHASER_OMEGA       = 0.05 # [rad/s] standard deviation of chaser angular velocity randomization
+        self.RANDOMIZATION_ANGLE              = np.pi/2 # [rad] standard deviation of base angular randomization
         self.RANDOMIZATION_ARM_ANGLE          = np.pi/4 # [rad] standard deviation of arm angular randomization
+        self.RANDOMIZATION_ARM_RATES          = 0.05 # [rad/s] standard deviation of arm angular rate randomization
         self.RANDOMIZATION_TARGET_VELOCITY    = 0.0 # [m/s] standard deviation of the target's velocity randomization
         self.RANDOMIZATION_TARGET_OMEGA       = 0.0 # [rad/s] standard deviation of the target's angular velocity randomization
         self.MIN_V                            = -100.
@@ -165,20 +171,12 @@ class Environment:
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
         self.KI                               = [10, 10, 0.05, 0.05, 0.05, 0.05] # Integral gain for the integral-linear acceleration controller in [X, Y, angle, shoulder, elbow, wrist] (how fast does the commanded acceleration get realized)
-        
-        # Platform physical properties
-        self.LENGTH                        = 0.3 # [m] side length
-        self.LENGTH_RANDOMIZATION          = 0.1 # [m] standard deviation of the LENGTH randomization when domain randomization is performed.
-        self.MASS                          = 10.0  # [kg] for chaser
-        self.MASS_RANDOMIZATION            = 1.0 # [kg] standard deviation of the MASS randomization when domain randomization is performed.
-        self.INERTIA                       = 1/12*self.MASS*(self.LENGTH**2 + self.LENGTH**2) # 0.15 [kg m^2]
-        self.DOCKING_PORT_MOUNT_POSITION   = np.array([0, self.LENGTH/2]) # position of the docking cone on the target in its body frame
-        self.DOCKING_PORT_CORNER1_POSITION = self.DOCKING_PORT_MOUNT_POSITION + [ 0.05, 0.1] # position of the docking cone on the target in its body frame
-        self.DOCKING_PORT_CORNER2_POSITION = self.DOCKING_PORT_MOUNT_POSITION + [-0.05, 0.1] # position of the docking cone on the target in its body frame
                 
-        # Arm physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
+        # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
+        self.LENGTH   = 0.3 # [m] side length
         self.PHI      = np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
         self.B0       = (self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
+        self.MASS     = 10.0  # [kg] for chaser
         self.M1       = 1 # [kg] link mass
         self.M2       = 1 # [kg] link mass
         self.M3       = 1 # [kg] link mass
@@ -192,6 +190,13 @@ class Environment:
         self.INERTIA1 = 1/12*self.M1*(self.A1 + self.B1)**2 # [kg m^2] link inertia
         self.INERTIA2 = 1/12*self.M2*(self.A2 + self.B2)**2 # [kg m^2] link inertia
         self.INERTIA3 = 1/12*self.M3*(self.A3 + self.B3)**2 # [kg m^2] link inertia        
+        
+        # Platform physical properties        
+        self.LENGTH_RANDOMIZATION          = 0.1 # [m] standard deviation of the LENGTH randomization when domain randomization is performed.        
+        self.MASS_RANDOMIZATION            = 1.0 # [kg] standard deviation of the MASS randomization when domain randomization is performed.
+        self.DOCKING_PORT_MOUNT_POSITION   = np.array([0, self.LENGTH/2]) # position of the docking cone on the target in its body frame
+        self.DOCKING_PORT_CORNER1_POSITION = self.DOCKING_PORT_MOUNT_POSITION + [ 0.05, 0.1] # position of the docking cone on the target in its body frame
+        self.DOCKING_PORT_CORNER2_POSITION = self.DOCKING_PORT_MOUNT_POSITION + [-0.05, 0.1] # position of the docking cone on the target in its body frame
         
         # Reward function properties
         self.DOCKING_REWARD                   = 100 # A lump-sum given to the chaser when it docks
@@ -237,24 +242,33 @@ class Environment:
         # If we are randomizing the initial conditions and state
         if self.RANDOMIZE:
             # Randomizing initial state in Inertial frame
-            self.chaser_position = self.INITIAL_CHASER_POSITION + np.random.randn(3)*[self.RANDOMIZATION_LENGTH, self.RANDOMIZATION_LENGTH, self.RANDOMIZATION_ANGLE]
+            self.chaser_position = self.INITIAL_CHASER_POSITION + np.random.randn(3)*[self.RANDOMIZATION_POSITION, self.RANDOMIZATION_POSITION, self.RANDOMIZATION_ANGLE]
+            # Randomizing initial claser velocity in Inertial Frame
+            self.chaser_velocity = self.INITIAL_CHASER_VELOCITY + np.random.randn(3)*[self.RANDOMIZATION_CHASER_VELOCITY, self.RANDOMIZATION_CHASER_VELOCITY, self.RANDOMIZATION_CHASER_OMEGA]
             # Randomizing target state in Inertial frame
-            self.target_position = self.INITIAL_TARGET_POSITION + np.random.randn(3)*[self.RANDOMIZATION_LENGTH, self.RANDOMIZATION_LENGTH, self.RANDOMIZATION_ANGLE]
+            self.target_position = self.INITIAL_TARGET_POSITION + np.random.randn(3)*[self.RANDOMIZATION_POSITION, self.RANDOMIZATION_POSITION, self.RANDOMIZATION_ANGLE]
             # Randomizing target velocity in Inertial frame
             self.target_velocity = self.INITIAL_TARGET_VELOCITY + np.random.randn(3)*[self.RANDOMIZATION_TARGET_VELOCITY, self.RANDOMIZATION_TARGET_VELOCITY, self.RANDOMIZATION_TARGET_OMEGA]
+            # Randomizing arm angles in Body frame
+            self.arm_angles = self.INITIAL_ARM_ANGLES + np.random.randn(3)*[self.RANDOMIZATION_ARM_ANGLE, self.RANDOMIZATION_ARM_ANGLE, self.RANDOMIZATION_ARM_ANGLE]
+            # Randomizing arm angular rates in body frame
+            self.arm_angular_rates = self.INITIAL_ARM_RATES + np.random.randn(3)*[self.RANDOMIZATION_ARM_RATES, self.RANDOMIZATION_ARM_RATES, self.RANDOMIZATION_ARM_RATES]
             
 
         else:
             # Constant initial state in Inertial frame
             self.chaser_position = self.INITIAL_CHASER_POSITION
+            # Constant chaser velocity in Inertial frame
+            self.chaser_velocity = self.INITIAL_CHASER_VELOCITY
             # Constant target location in Inertial frame
             self.target_position = self.INITIAL_TARGET_POSITION
             # Constant target velocity in Inertial frame
             self.target_velocity = self.INITIAL_TARGET_VELOCITY
-        
-        # Resetting the chaser's initial velocity
-        self.chaser_velocity = self.INITIAL_CHASER_VELOCITY
-        
+            # Constant initial arm position in Body frame
+            self.arm_angles = self.INITIAL_ARM_ANGLES
+            # Constand arm angular velocity in Body frame
+            self.arm_angular_rates = self.INITIAL_ARM_RATES
+                
         # Update docking component locations
         self.update_docking_locations()
         
@@ -263,6 +277,7 @@ class Environment:
 
         # Initializing the previous velocity and control effort for the integral-acceleration controller
         self.previous_velocity = np.zeros(len(self.INITIAL_CHASER_VELOCITY))
+        self.previous_arm_velocity = np.zeros(len(self.INITIAL_ARM_RATES))
         self.previous_control_effort = np.zeros(self.ACTION_SIZE)
 
         # Resetting the time
@@ -273,15 +288,25 @@ class Environment:
             self.action_delay_queue = queue.Queue(maxsize = self.DYNAMICS_DELAY + 1)
             for i in range(self.DYNAMICS_DELAY):
                 self.action_delay_queue.put(np.zeros(self.ACTION_SIZE), False)
+                
 
-    def end_effector_position(self):
+    def update_end_effector_and_docking_locations(self):
         """
         This method returns the location of the end-effector of the manipulator
-        based off the current state
+        based off the current state in the Inertial frame
+        
+        It also updates the docking port position on the target
         """
-
+        ##########################
+        ## End-effector Section ##
+        ##########################
         # Unpacking the state
-        x, y, theta, theta_1, theta_2, theta_3 = self.state[:self.POSITION_STATE_LENGTH]
+        x = self.state[0]
+        y = self.state[1]
+        theta = self.state[2]
+        theta_1 = self.state[6]
+        theta_2 = self.state[8]
+        theta_3 = self.state[10]
 
         x_ee = x + self.B0*np.cos(self.PHI + theta) + (self.A1 + self.B1)*np.cos(np.pi/2 + theta + theta_1) + \
                (self.A2 + self.B2)*np.cos(np.pi/2 + theta + theta_1 + theta_2) + \
@@ -291,17 +316,16 @@ class Environment:
                (self.A2 + self.B2)*np.sin(np.pi/2 + theta + theta_1 + theta_2) + \
                (self.A3 + self.B3)*np.sin(np.pi/2 + theta + theta_1 + theta_2 + theta_3)
 
-        return np.array([x_ee, y_ee])
-
-    def update_docking_locations(self):
-        # Updates the position of the end-effector and the docking port in the Inertial frame
+        # Updates the position of  the docking port in the Inertial frame
+        self.end_effector_position = np.array([x_ee, y_ee])
         
-        # Make rotation matrices        
-        C_Ib_chaser = self.make_C_bI(self.chaser_position[-1]).T
+        ##########################
+        ## Docking port Section ##
+        ##########################
+        # Make rotation matrix
         C_Ib_target = self.make_C_bI(self.target_position[-1]).T
         
         # Position in Inertial = Body position (inertial) + C_Ib * EE position in body
-        self.end_effector_position = self.chaser_position[:-1] + np.matmul(C_Ib_chaser, self.END_EFFECTOR_POSITION)
         self.docking_port_position = self.target_position[:-1] + np.matmul(C_Ib_target, self.DOCKING_PORT_MOUNT_POSITION)
 
         
@@ -309,7 +333,7 @@ class Environment:
     ##### Step the Dynamics forward #####
     #####################################
     def step(self, action):
-
+start here
         # Integrating forward one time step using the calculated action.
         # Oeint returns initial condition on first row then next TIMESTEP on the next row
         #########################################
