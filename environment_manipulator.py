@@ -111,7 +111,7 @@ class Environment:
         The positions are in inertial frame but the manipulator angles are in the joint frame.
         
         """
-        self.TOTAL_STATE_SIZE         = 22 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, shoulder_theta_dot, elbow_theta, elbow_theta_dot, wrist_theta, wrist_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot]
+        self.TOTAL_STATE_SIZE         = 22 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot]
         ### Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
         #         TOTAL_STATE is returned from the environment to the agent.
         #         A subset of the TOTAL_STATE, called the 'observation', is passed to the policy network to calculate acitons. This takes place in the agent
@@ -129,20 +129,19 @@ class Environment:
         self.MAX_ANGULAR_ACCELERATION         = 0.1 # [rad/s^2]
         self.LOWER_ACTION_BOUND               = np.array([-self.MAX_LINEAR_ACCELERATION, -self.MAX_LINEAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
         self.UPPER_ACTION_BOUND               = np.array([ self.MAX_LINEAR_ACCELERATION,  self.MAX_LINEAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
-        
-        
-        self.LOWER_STATE_BOUND                = np.array([ 0.0, 0.0, -2*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY,  # Chaser 
-                                                          -np.pi/2, -self.MAX_ANGULAR_VELOCITY, # Shoulder
-                                                          -np.pi/2, -self.MAX_ANGULAR_VELOCITY, # Elbow
-                                                          -np.pi/2, -self.MAX_ANGULAR_VELOCITY, # Wrist
-                                                          0.0, 0.0, -3*self.MAX_VELOCITY, -3*self.MAX_VELOCITY,  # End-effector
-                                                          0.0, 0.0, -2*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY]) # Target [m, m, rad, m/s, m/s, rad/s, rad, rad/s, rad, rad/s, rad, rad/s, m, m, m/s, m/s, m, m, rad, m/s, m/s, rad/s] // lower bound for each element of TOTAL_STATE
-        self.UPPER_STATE_BOUND                = np.array([ 3.7, 2.4, 2*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY,  # Chaser 
-                                                           np.pi/2, self.MAX_ANGULAR_VELOCITY, # Shoulder
-                                                           np.pi/2, self.MAX_ANGULAR_VELOCITY, # Elbow
-                                                           np.pi/2, self.MAX_ANGULAR_VELOCITY, # Wrist
-                                                           0.0, 0.0, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY,  # End-effector
-                                                           0.0, 0.0, 2*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY]) # Target [m, m, rad, m/s, m/s, rad/s, rad, rad/s, rad, rad/s, rad, rad/s, m, m, m/s, m/s, m, m, rad, m/s, m/s, rad/s] // lower bound for each element of TOTAL_STATE
+                
+        self.LOWER_STATE_BOUND                = np.array([ 0.0, 0.0, -6*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY,  # Chaser 
+                                                          -np.pi/2, -np.pi/2, -np.pi/2, # Shoulder_theta, Elbow_theta, Wrist_theta
+                                                          -self.MAX_ANGULAR_VELOCITY, -self.MAX_ANGULAR_VELOCITY, -self.MAX_ANGULAR_VELOCITY, # Shoulder_theta_dot, Elbow_theta_dot, Wrist_theta_dot
+                                                          0.0, 0.0, -6*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY, # Target
+                                                          0.0, 0.0, -3*self.MAX_VELOCITY, -3*self.MAX_VELOCITY]) # End-effector
+                                                          # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // lower bound for each element of TOTAL_STATE
+        self.UPPER_STATE_BOUND                = np.array([ 3.7, 2.4, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY,  # Chaser 
+                                                          np.pi/2, np.pi/2, np.pi/2, # Shoulder_theta, Elbow_theta, Wrist_theta
+                                                          self.MAX_ANGULAR_VELOCITY, self.MAX_ANGULAR_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Shoulder_theta_dot, Elbow_theta_dot, Wrist_theta_dot
+                                                          3.7, 2.4, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Target
+                                                          3.7, 2.4, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY]) # End-effector
+                                                          # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
         self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.2, 0.0]) # [m, m, rad]
         self.INITIAL_CHASER_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
         self.INITIAL_ARM_ANGLES               = np.array([0.0, 0.0, 0.0]) # [rad, rad, rad[
@@ -301,12 +300,8 @@ class Environment:
         ## End-effector Section ##
         ##########################
         # Unpacking the state
-        x = self.state[0]
-        y = self.state[1]
-        theta = self.state[2]
-        theta_1 = self.state[6]
-        theta_2 = self.state[8]
-        theta_3 = self.state[10]
+        x, y, theta = self.chaser_position
+        theta_1, theta_2, theta_3 = self.arm_angles
 
         x_ee = x + self.B0*np.cos(self.PHI + theta) + (self.A1 + self.B1)*np.cos(np.pi/2 + theta + theta_1) + \
                (self.A2 + self.B2)*np.cos(np.pi/2 + theta + theta_1 + theta_2) + \
@@ -328,57 +323,70 @@ class Environment:
         # Position in Inertial = Body position (inertial) + C_Ib * EE position in body
         self.docking_port_position = self.target_position[:-1] + np.matmul(C_Ib_target, self.DOCKING_PORT_MOUNT_POSITION)
 
+    def make_total_state(self):
         
+        # Assembles all the data into the shape of TOTAL STATE so that it is consistent
+        # chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, 
+        # shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, 
+        # target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, 
+        # ee_x, ee_y, ee_x_dot, ee_y_dot]
+
+        total_state = np.concatenate([self.chaser_position, self.chaser_velocity, self.arm_angles, self.arm_angular_rates, self.target_position, self.target_velocity, self.end_effector_position, self.end_effector_velocity])
+        
+        return total_state
     #####################################
     ##### Step the Dynamics forward #####
     #####################################
     def step(self, action):
-start here
+
         # Integrating forward one time step using the calculated action.
         # Oeint returns initial condition on first row then next TIMESTEP on the next row
-        #########################################
-        ##### PROPAGATE KINEMATICS/DYNAMICS #####
-        #########################################
-        if self.dynamics_flag:
-            ############################
-            #### PROPAGATE DYNAMICS ####
-            ############################
 
-            # First, calculate the control effort
-            control_effort = self.controller(action)
+        ############################
+        #### PROPAGATE DYNAMICS ####
+        ############################
 
-            # Anything that needs to be sent to the dynamics integrator
-            dynamics_parameters = [control_effort, self.MASS, self.INERTIA]
+        # First, calculate the control effort
+        control_effort = self.controller(action)
 
-            # Propagate the dynamics forward one timestep
-            next_states = odeint(dynamics_equations_of_motion, np.concatenate([self.chaser_position, self.chaser_velocity]), [self.time, self.time + self.TIMESTEP], args = (dynamics_parameters,), full_output = 0)
+        # Anything that needs to be sent to the dynamics integrator
+        dynamics_parameters = [control_effort, self.LENGTH, self.PHI, self.B0, self.MASS, self.M1, self.M2, self.M3, self.A1, self.B1, self.A2, self.B2, self.A3, self.B3, self.INERTIA, self.INERTIA1, self.INERTIA2, self.INERTIA3]
+        
+        # Building the state
+        current_state = self.make_total_state()
+        
+        # Propagate the dynamics forward one timestep
+        next_states = odeint(dynamics_equations_of_motion, current_state, [self.time, self.time + self.TIMESTEP], args = (dynamics_parameters,), full_output = 0)
 
-            # Saving the new state
-            self.chaser_position = next_states[1,:len(self.INITIAL_CHASER_POSITION)] # extract position
-            self.chaser_velocity = next_states[1,len(self.INITIAL_CHASER_POSITION):] # extract velocity
+        # Saving the new state
+        new_total_state = next_states[1,:]
+        unpack the new state here
+        
+        self.chaser_position = next_states[1,:len(self.INITIAL_CHASER_POSITION)] # extract position
+        self.chaser_velocity = next_states[1,len(self.INITIAL_CHASER_POSITION):] # extract velocity
 
-        else:
+        # else:
 
-            # Parameters to be passed to the kinematics integrator
-            kinematics_parameters = [action, len(self.INITIAL_CHASER_POSITION)]
+        #     # Parameters to be passed to the kinematics integrator
+        #     kinematics_parameters = [action, len(self.INITIAL_CHASER_POSITION)]
 
-            ###############################
-            #### PROPAGATE KINEMATICS #####
-            ###############################
-            next_states = odeint(kinematics_equations_of_motion, np.concatenate([self.chaser_position, self.chaser_velocity]), [self.time, self.time + self.TIMESTEP], args = (kinematics_parameters,), full_output = 0)
+        #     ###############################
+        #     #### PROPAGATE KINEMATICS #####
+        #     ###############################
+        #     next_states = odeint(kinematics_equations_of_motion, np.concatenate([self.chaser_position, self.chaser_velocity]), [self.time, self.time + self.TIMESTEP], args = (kinematics_parameters,), full_output = 0)
 
-            # Saving the new state
-            self.chaser_position = next_states[1,:len(self.INITIAL_CHASER_POSITION)] # extract position
-            self.chaser_velocity = next_states[1,len(self.INITIAL_CHASER_POSITION):] # extract velocity  
+        #     # Saving the new state
+        #     self.chaser_position = next_states[1,:len(self.INITIAL_CHASER_POSITION)] # extract position
+        #     self.chaser_velocity = next_states[1,len(self.INITIAL_CHASER_POSITION):] # extract velocity  
             
-            # Optionally, add noise to the kinematics to simulate "controller noise"
-            if self.KINEMATIC_NOISE and (not self.test_time or self.FORCE_NOISE_AT_TEST_TIME):
-                 # Add some noise to the position part of the state
-                 self.chaser_position += np.random.randn(len(self.chaser_position)) * self.KINEMATIC_POSITION_NOISE_SD
-                 self.chaser_velocity += np.random.randn(len(self.chaser_velocity)) * self.KINEMATIC_VELOCITY_NOISE_SD
+        #     # Optionally, add noise to the kinematics to simulate "controller noise"
+        #     if self.KINEMATIC_NOISE and (not self.test_time or self.FORCE_NOISE_AT_TEST_TIME):
+        #          # Add some noise to the position part of the state
+        #          self.chaser_position += np.random.randn(len(self.chaser_position)) * self.KINEMATIC_POSITION_NOISE_SD
+        #          self.chaser_velocity += np.random.randn(len(self.chaser_velocity)) * self.KINEMATIC_VELOCITY_NOISE_SD
             
-            # Ensuring the velocity is within the bounds
-            self.chaser_velocity = np.clip(self.chaser_velocity, -self.VELOCITY_LIMIT, self.VELOCITY_LIMIT)
+        #     # Ensuring the velocity is within the bounds
+        #     self.chaser_velocity = np.clip(self.chaser_velocity, -self.VELOCITY_LIMIT, self.VELOCITY_LIMIT)
 
 
         # Step target's state ahead one timestep
@@ -701,14 +709,13 @@ start here
 def dynamics_equations_of_motion(state, t, parameters):
     # state = [x, y, theta, xdot, ydot, thetadot]
 
-    # Unpacking the state
-    x, y, theta, theta_1, theta_2, theta_3, x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot = state
+    # Unpacking the chaser properties from the TOTAL_STATE
+    x, y, theta, x_dot, y_dot, theta_dot, theta_1, theta_2, theta_3, theta_1_dot, theta_2_dot, theta_3_dot, *_ = state
 
     control_effort, LENGTH, PHI, B0, \
     MASS, M1, M2, M3, \
     A1, B1, A2, B2, A3, B3, \
     INERTIA, INERTIA1, INERTIA2, INERTIA3 = parameters # Unpacking parameters
-
 
     # Generating mass matrix using Alex's equations from InertiaFinc3LINK
     t2 = A1+B1
