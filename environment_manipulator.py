@@ -1,4 +1,3 @@
-
 """
 This script provides the environment for a free flying spacecraft with a
 three-link manipulator.
@@ -144,7 +143,7 @@ class Environment:
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
         self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.2, 0.0]) # [m, m, rad]
         self.INITIAL_CHASER_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
-        self.INITIAL_ARM_ANGLES               = np.array([0.0, 0.0, 0.0]) # [rad, rad, rad[
+        self.INITIAL_ARM_ANGLES               = np.array([0.0, 0.0, 0.0]) # [rad, rad, rad]
         self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
         self.INITIAL_TARGET_POSITION          = np.array([2.0, 1.0, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
@@ -275,8 +274,7 @@ class Environment:
         self.check_collisions()
 
         # Initializing the previous velocity and control effort for the integral-acceleration controller
-        self.previous_velocity = np.zeros(len(self.INITIAL_CHASER_VELOCITY))
-        self.previous_arm_velocity = np.zeros(len(self.INITIAL_ARM_RATES))
+        self.previous_velocities = np.zeros(self.ACTION_SIZE)
         self.previous_control_effort = np.zeros(self.ACTION_SIZE)
 
         # Resetting the time
@@ -334,6 +332,14 @@ class Environment:
         total_state = np.concatenate([self.chaser_position, self.chaser_velocity, self.arm_angles, self.arm_angular_rates, self.target_position, self.target_velocity, self.end_effector_position, self.end_effector_velocity])
         
         return total_state
+    
+    def make_chaser_state(self):
+        
+        # Assembles all chaser-relevant data into a state to be fed to the equations of motion
+        
+        total_chaser_state = np.concatenate([self.chaser_position, self.arm_angles, self.chaser_velocity, self.arm_angular_rates])
+        
+        return total_chaser_state
     #####################################
     ##### Step the Dynamics forward #####
     #####################################
@@ -353,40 +359,19 @@ class Environment:
         dynamics_parameters = [control_effort, self.LENGTH, self.PHI, self.B0, self.MASS, self.M1, self.M2, self.M3, self.A1, self.B1, self.A2, self.B2, self.A3, self.B3, self.INERTIA, self.INERTIA1, self.INERTIA2, self.INERTIA3]
         
         # Building the state
-        current_state = self.make_total_state()
+        current_chaser_state = self.make_chaser_state()
         
         # Propagate the dynamics forward one timestep
-        next_states = odeint(dynamics_equations_of_motion, current_state, [self.time, self.time + self.TIMESTEP], args = (dynamics_parameters,), full_output = 0)
+        next_states = odeint(dynamics_equations_of_motion, current_chaser_state, [self.time, self.time + self.TIMESTEP], args = (dynamics_parameters,), full_output = 0)
 
         # Saving the new state
-        new_total_state = next_states[1,:]
-        unpack the new state here
+        new_chaser_state = next_states[1,:]
         
-        self.chaser_position = next_states[1,:len(self.INITIAL_CHASER_POSITION)] # extract position
-        self.chaser_velocity = next_states[1,len(self.INITIAL_CHASER_POSITION):] # extract velocity
-
-        # else:
-
-        #     # Parameters to be passed to the kinematics integrator
-        #     kinematics_parameters = [action, len(self.INITIAL_CHASER_POSITION)]
-
-        #     ###############################
-        #     #### PROPAGATE KINEMATICS #####
-        #     ###############################
-        #     next_states = odeint(kinematics_equations_of_motion, np.concatenate([self.chaser_position, self.chaser_velocity]), [self.time, self.time + self.TIMESTEP], args = (kinematics_parameters,), full_output = 0)
-
-        #     # Saving the new state
-        #     self.chaser_position = next_states[1,:len(self.INITIAL_CHASER_POSITION)] # extract position
-        #     self.chaser_velocity = next_states[1,len(self.INITIAL_CHASER_POSITION):] # extract velocity  
-            
-        #     # Optionally, add noise to the kinematics to simulate "controller noise"
-        #     if self.KINEMATIC_NOISE and (not self.test_time or self.FORCE_NOISE_AT_TEST_TIME):
-        #          # Add some noise to the position part of the state
-        #          self.chaser_position += np.random.randn(len(self.chaser_position)) * self.KINEMATIC_POSITION_NOISE_SD
-        #          self.chaser_velocity += np.random.randn(len(self.chaser_velocity)) * self.KINEMATIC_VELOCITY_NOISE_SD
-            
-        #     # Ensuring the velocity is within the bounds
-        #     self.chaser_velocity = np.clip(self.chaser_velocity, -self.VELOCITY_LIMIT, self.VELOCITY_LIMIT)
+        # The inverse of make_chaser_state()
+        self.chaser_position = new_chaser_state[0:3]
+        self.arm_angles = new_chaser_state[3:6]
+        self.chaser_velocity = new_chaser_state[6:9]
+        self.arm_angular_rates = new_chaser_state[9:12]
 
 
         # Step target's state ahead one timestep
@@ -420,11 +405,11 @@ class Environment:
         ########################################
         desired_accelerations = action
         
-        current_velocity = self.chaser_velocity # [v_x, v_y, omega]
-        current_accelerations = (current_velocity - self.previous_velocity)/self.TIMESTEP # Approximating the current acceleration [a_x, a_y, alpha]
+        current_velocities = np.concatenate([self.chaser_velocity, self.arm_angular_rates]) # [v_x, v_y, omega, theta1_dot, theta2_dot, theta3_dot]
+        current_accelerations = (current_velocities - self.previous_velocities)/self.TIMESTEP # Approximating the current acceleration [a_x, a_y, alpha, alpha1, alpha2, alpha3]
         
         # Checking whether our velocity is too large AND the acceleration is trying to increase said velocity... in which case we set the desired_linear_acceleration to zero.
-        desired_accelerations[(np.abs(current_velocity) > self.VELOCITY_LIMIT) & (np.sign(desired_accelerations) == np.sign(current_velocity))] = 0        
+        desired_accelerations[(np.abs(current_velocities) > self.VELOCITY_LIMIT) & (np.sign(desired_accelerations) == np.sign(current_velocities))] = 0        
         
         # Calculating acceleration error
         acceleration_error = desired_accelerations - current_accelerations
@@ -433,12 +418,12 @@ class Environment:
         control_effort = self.previous_control_effort + self.KI * acceleration_error
 
         # Saving the current velocity for the next timetsep
-        self.previous_velocity = current_velocity
+        self.previous_velocities = current_velocities
         
         # Saving the current control effort for the next timestep
         self.previous_control_effort = control_effort
 
-        # [F_x, F_y, torque]
+        # [F_x, F_y, torque, torque1, torque2, torque3]
         return control_effort
 
 
@@ -459,12 +444,13 @@ class Environment:
         reward = 0
         
         # Give a large reward for docking
-        if np.linalg.norm(self.end_effector_position - self.docking_port_position) <= self.SUCCESSFUL_DOCKING_DISTANCE:
+        if self.docked:
             
             reward += self.DOCKING_REWARD
             
             # Penalize for end-effector angle
             # end-effector angle in the chaser body frame
+            start here edit arm angles since we have them in the state
             end_effector_angle_body = np.arctan2(self.END_EFFECTOR_POSITION[1] - self.WRIST_POSITION[1],self.END_EFFECTOR_POSITION[0] - self.WRIST_POSITION[0])
             end_effector_angle_inertial = end_effector_angle_body + self.chaser_position[-1]
             
@@ -495,8 +481,14 @@ class Environment:
             reward -= np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY
             
             if self.test_time:
-                print("docking successful! Reward given: %.1f distance: %.3f relative velocity: %.3f velocity penalty: %.1f docking angle: %.2f angle penalty: %.1f angular rate error: %.3f angular rate penalty %.1f" %(reward, np.linalg.norm(self.end_effector_position - self.docking_port_position), np.linalg.norm(docking_relative_velocity), np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY, docking_angle_error*180/np.pi, np.abs(np.sin(docking_angle_error/2)) * self.MAX_DOCKING_ANGLE_PENALTY,np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]),np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY))
+                print("docking successful! Reward given: %.1f distance: %.3f; relative velocity: %.3f velocity penalty: %.1f; docking angle: %.2f angle penalty: %.1f; angular rate error: %.3f angular rate penalty %.1f" %(reward, np.linalg.norm(self.end_effector_position - self.docking_port_position), np.linalg.norm(docking_relative_velocity), np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY, docking_angle_error*180/np.pi, np.abs(np.sin(docking_angle_error/2)) * self.MAX_DOCKING_ANGLE_PENALTY,np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]),np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY))
         
+        if self.GIVE_MID_WAY_REWARD and self.not_yet_mid_way and self.mid_way:
+            if self.test_time:
+                print("Just passed the mid-way mark. Distance: %.3f at time %.1f" %(np.linalg.norm(self.end_effector_position - self.docking_port_position), self.time))
+            self.not_yet_mid_way = False
+            reward += self.MID_WAY_REWARD
+            #Debug why this gets printed 4 times sometimes at the end of the episode!
         
         # Giving a penalty for colliding with the target
         if self.chaser_target_collision:
@@ -512,7 +504,7 @@ class Environment:
         if self.chaser_position[0] > 4 or self.chaser_position[0] < -1 or self.chaser_position[1] > 3 or self.chaser_position[1] < -1 or self.chaser_position[2] > 6*np.pi or self.chaser_position[2] < -6*np.pi:
             reward -= self.FALL_OFF_TABLE_PENALTY
 
-        return reward # possibly add .squeeze() if the shape is not ()
+        return reward
     
     def check_collisions(self):
         """ Calculate whether the different objects are colliding with the target. 
@@ -706,11 +698,15 @@ class Environment:
 #####################################################################
 ##### Generating the dynamics equations representing the motion #####
 #####################################################################
-def dynamics_equations_of_motion(state, t, parameters):
+def dynamics_equations_of_motion(chaser_state, t, parameters):
     # state = [x, y, theta, xdot, ydot, thetadot]
 
+
     # Unpacking the chaser properties from the TOTAL_STATE
-    x, y, theta, x_dot, y_dot, theta_dot, theta_1, theta_2, theta_3, theta_1_dot, theta_2_dot, theta_3_dot, *_ = state
+    x, y, theta, x_dot, y_dot, theta_dot, theta_1, theta_2, theta_3, theta_1_dot, theta_2_dot, theta_3_dot = chaser_state
+    
+    state = x, y, theta, x_dot, y_dot, theta_dot, theta_1, theta_2, theta_3
+    state_dot = x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot
 
     control_effort, LENGTH, PHI, B0, \
     MASS, M1, M2, M3, \
@@ -967,15 +963,11 @@ def dynamics_equations_of_motion(state, t, parameters):
     # Assembling the matrix
     CoriolisMatrix = np.array([0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,-t15*t16-t21*t22-t28*t29-theta_dot*t33*np.cos(t34),-t16*t35-t22*t36-t29*t37-theta_dot*t33*np.sin(t34),-t66*t67-t70*t71-t77*t78-t46*(t40+t41+t42+t43+t44)-t59*(t55+t56+t57)-t54*(t47+t48+t49+t50+t51+t52),t109+t110-t66*t67-t70*t71-t77*t78+t46*(t85+t86+t87+t88+t89),t109+t110+t112+t114-t70*t71,t110+t122+t128,-t15*t16-t21*t22-t28*t29,-t16*t35-t22*t36-t29*t37,-t66*t67-t54*t82-t70*t71-t59*t84-t77*t78-t46*(t40+t41+t42+t43+t44+t85+t86+t87+t88+t89),-t66*t67-t70*t71-t77*t78,t112+t114-t70*t71,t122+t128,-t21*t22-t28*t29,-t22*t36-t29*t37,-t54*t82-t70*t71-t59*t84-t66*t102-t77*t107,-t70*t71-t66*t102-t77*t107,-A3*M3*theta_3_dot*t8*t70,A3*M3*t8*t70*(theta_dot+theta_1_dot+theta_2_dot),A3*M3*t38*np.sin(t39),-A3*M3*t38*np.cos(t39),-A3*B0*M3*t38*t59-A3*M3*t8*t38*t70-A3*M3*t2*t38*t77,-A3*M3*t8*t38*t70-A3*M3*t2*t38*t77,-A3*M3*t8*t38*t70,00]).reshape([6,6], order='F') # default order is different than matlab
 
-    #control_effort = np.array([0, 0, 0, 0, 0, np.pi/1200])
-    second_derivatives = np.matmul(np.linalg.inv(MassMatrix),(control_effort - np.matmul(CoriolisMatrix, state[6:]))) # Should it be state[6:] instead??!? I think so
-    #second_derivatives = np.matmul(np.linalg.inv(MassMatrix),(0 - np.matmul(CoriolisMatrix, state[6:]))) # Should it be state[6:] instead??!? I think so
+    second_derivatives = np.matmul(np.linalg.inv(MassMatrix),(control_effort - np.matmul(CoriolisMatrix, state_dot))) # Should it be state[6:] instead??!? I think so
 
     first_derivatives = np.array([x_dot, y_dot, theta_dot, theta_dot + theta_1_dot, theta_dot + theta_1_dot + theta_2_dot, theta_dot + theta_1_dot + theta_2_dot + theta_3_dot])
 
-    full_derivative = np.concatenate((first_derivatives, second_derivatives))#.squeeze()
-
-    #print(control_effort, full_derivative)
+    full_derivative = np.concatenate([first_derivatives, second_derivatives])
 
     return full_derivative
 
