@@ -161,10 +161,7 @@ class Agent:
             test_time = (self.n_agent == 1) and (episode_number % Settings.CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES == 0 or episode_number == 1)
 
             # Resetting the environment for this episode by sending a boolean
-            if test_time and Settings.TEST_ON_DYNAMICS:
-                self.agent_to_env.put((True, test_time)) # Reset into a dynamics environment only if it's test time and desired
-            else:
-                self.agent_to_env.put((False, test_time)) # Reset into a kinematics environment
+            self.agent_to_env.put((True, test_time)) # Reset into a dynamics environment
             total_state = self.env_to_agent.get()
             
             # Augment total_state with past actions, if appropriate
@@ -238,7 +235,7 @@ class Agent:
                 #### Step the dynamics forward one timestep ####
                 ################################################
                 # Send the action to the environment process
-                self.agent_to_env.put((np.concatenate([action, np.zeros([1])]),)) # The concatenated 0 is to command 0 altitude acceleration
+                self.agent_to_env.put((action,))
 
                 # Receive results from stepped environment
                 next_total_state, reward, done, *guidance_position = self.env_to_agent.get() # The * means the variable will be unpacked only if it exists
@@ -351,7 +348,7 @@ class Agent:
                     bins = np.linspace(Settings.MIN_V, Settings.MAX_V, Settings.NUMBER_OF_BINS)
 
                     # Render the episode
-                    environment_file.render(np.asarray(raw_total_state_log), np.asarray(action_log), np.asarray(instantaneous_reward_log), np.asarray(cumulative_reward_log), critic_distributions, target_critic_distributions, projected_target_distribution, bins, np.asarray(loss_log), np.squeeze(np.asarray(guidance_position_log)), episode_number, self.filename, Settings.MODEL_SAVE_DIRECTORY)
+                    environment_file.render(np.asarray(raw_total_state_log), np.asarray(action_log), np.asarray(instantaneous_reward_log), np.asarray(cumulative_reward_log), critic_distributions, target_critic_distributions, projected_target_distribution, bins, np.asarray(loss_log), episode_number, self.filename, Settings.MODEL_SAVE_DIRECTORY)
 
                 except queue.Empty:
                     print("Skipping this animation!")

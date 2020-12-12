@@ -59,26 +59,6 @@ environment_file = __import__('environment_' + Settings.ENVIRONMENT)
 agent_file       = __import__('agent' + Settings.AGENT)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #%%
 ##########################
 ##### SETTING UP RUN #####
@@ -154,22 +134,12 @@ for each_file in glob.glob('*.py'):
 with tf.Session(config = config) as sess:
     print("\nThis run is named " + filename)
     print("\nThe environment file is: environment_" + Settings.ENVIRONMENT + '\n')
-    if Settings.TEST_ON_DYNAMICS:
-        print("At test time, full dynamics are being used\n")
-    else:
-        print("At test time, kinematics are being used\n")
 
-    if Settings.KINEMATIC_NOISE:
-        print("Noise is being applied to the kinematics during training to simulate a poor controller\n")
+    print("Full dynamics are ALWAYS being used")
 
-
-
-
-
-
-
-
-
+    ################################################
+    ### Measuring the memory size of the program ###
+    ################################################
     def get_size(obj, seen=None):
         """Recursively finds size of objects"""
         size = sys.getsizeof(obj)
@@ -189,26 +159,6 @@ with tf.Session(config = config) as sess:
         elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
             size += sum([get_size(i, seen) for i in obj])
         return size
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     ##############################
@@ -318,29 +268,7 @@ with tf.Session(config = config) as sess:
     # Write the Tensorflow computation graph to file, now that it has been fully built
     writer.add_graph(sess.graph)
     print('Done starting!')
-    
-    
-    
-    
-    
-    
 
-    # For printing out all variables and their sizes
-    def sizeof_fmt(num, suffix='B'):
-        ''' by Fred Cirera,  https://stackoverflow.com/a/1094933/1870254, modified'''
-        for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
-            if abs(num) < 1024.0:
-                return "%3.1f %s%s" % (num, unit, suffix)
-            num /= 1024.0
-        return "%.1f %s%s" % (num, 'Yi', suffix)
-    
-    
-    
-    
-    
-    
-    
-    
 
     ####################################################
     ##### Waiting until all threads have completed #####

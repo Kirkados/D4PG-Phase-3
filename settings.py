@@ -33,7 +33,7 @@ class Settings:
     #############################
 
     # Hyperparameters
-    NUMBER_OF_ACTORS        = 10
+    NUMBER_OF_ACTORS        = 1
     NUMBER_OF_EPISODES      = 8e4 # that each agent will perform
     MAX_TRAINING_ITERATIONS = 1e8 # of neural networks
     ACTOR_LEARNING_RATE     = 0.0001
@@ -119,29 +119,16 @@ class Settings:
     LOWER_ACTION_BOUND               = env.LOWER_ACTION_BOUND
     UPPER_ACTION_BOUND               = env.UPPER_ACTION_BOUND
     NORMALIZE_STATE                  = env.NORMALIZE_STATE # Normalize state on each timestep to avoid vanishing gradients
+    IRRELEVANT_STATES                = env.IRRELEVANT_STATES
     MIN_V                            = env.MIN_V
     MAX_V                            = env.MAX_V
     DISCOUNT_FACTOR                  = env.DISCOUNT_FACTOR
     N_STEP_RETURN                    = env.N_STEP_RETURN
     TIMESTEP                         = env.TIMESTEP
     MAX_NUMBER_OF_TIMESTEPS          = env.MAX_NUMBER_OF_TIMESTEPS # per episode
-    NUMBER_OF_QUADS                  = env.NUMBER_OF_QUADS
-    irrelevant_states = []
-    for i in range(NUMBER_OF_QUADS):
-        for irrelevant_state in env.IRRELEVANT_STATES:
-            irrelevant_states.append(i * 6 + irrelevant_state)
-    IRRELEVANT_STATES = np.asarray(irrelevant_states)
-    TEST_ON_DYNAMICS                 = env.TEST_ON_DYNAMICS
-    KINEMATIC_NOISE                  = env.KINEMATIC_NOISE
     TOTAL_STATE_SIZE                 = env.TOTAL_STATE_SIZE
     AUGMENT_STATE_WITH_ACTION_LENGTH = env.AUGMENT_STATE_WITH_ACTION_LENGTH
     VELOCITY_LIMIT                   = env.VELOCITY_LIMIT
-    RUNWAY_LENGTH_ELEMENTS           = env.RUNWAY_LENGTH_ELEMENTS
-    RUNWAY_WIDTH_ELEMENTS            = env.RUNWAY_WIDTH_ELEMENTS
-    RUNWAY_LENGTH                    = env.RUNWAY_LENGTH
-    RUNWAY_WIDTH                     = env.RUNWAY_WIDTH
-    MINIMUM_CAMERA_ALTITUDE          = env.MINIMUM_CAMERA_ALTITUDE
-    MAXIMUM_CAMERA_ALTITUDE          = env.MAXIMUM_CAMERA_ALTITUDE
             
     # Delete the test environment
     del env

@@ -143,7 +143,7 @@ class Environment:
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
         self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.2, 0.0]) # [m, m, rad]
         self.INITIAL_CHASER_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
-        self.INITIAL_ARM_ANGLES               = np.array([0.0, 0.0, 0.0]) # [rad, rad, rad]
+        self.INITIAL_ARM_ANGLES               = np.array([np.pi/2, np.pi/2, 0.0]) # [rad, rad, rad]
         self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
         self.INITIAL_TARGET_POSITION          = np.array([2.0, 1.0, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
@@ -159,16 +159,16 @@ class Environment:
         self.RANDOMIZATION_TARGET_VELOCITY    = 0.0 # [m/s] standard deviation of the target's velocity randomization
         self.RANDOMIZATION_TARGET_OMEGA       = 0.0 # [rad/s] standard deviation of the target's angular velocity randomization
         self.MIN_V                            = -100.
-        self.MAX_V                            =  100.
+        self.MAX_V                            =  125.
         self.N_STEP_RETURN                    =   5
         self.DISCOUNT_FACTOR                  =   0.95**(1/self.N_STEP_RETURN)
         self.TIMESTEP                         =   0.2 # [s]
         self.DYNAMICS_DELAY                   =   0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH =   0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
-        self.MAX_NUMBER_OF_TIMESTEPS          = 150 # per episode
+        self.MAX_NUMBER_OF_TIMESTEPS          = 15 # per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
-        self.KI                               = [10, 10, 0.05, 0.05, 0.05, 0.05] # Integral gain for the integral-linear acceleration controller in [X, Y, angle, shoulder, elbow, wrist] (how fast does the commanded acceleration get realized)
+        self.KI                               = [10, 10, 0.02, 0.0025, 0.0025, 0.0025] # Integral gain for the integral-linear acceleration controller in [X, Y, angle, shoulder, elbow, wrist] (how fast does the commanded acceleration get realized)
                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
         self.LENGTH   = 0.3 # [m] side length
@@ -198,9 +198,9 @@ class Environment:
         
         # Reward function properties
         self.DOCKING_REWARD                   = 100 # A lump-sum given to the chaser when it docks
-        self.SUCCESSFUL_DOCKING_DISTANCE      = 0.03 # [m] distance at which the magnetic docking can occur
+        self.SUCCESSFUL_DOCKING_RADIUS        = 0.03 # [m] distance at which the magnetic docking can occur
         self.MAX_DOCKING_ANGLE_PENALTY        = 25 # A penalty given to the chaser, upon docking, for having an angle when docking. The penalty is 0 upon perfect docking and MAX_DOCKING_ANGLE_PENALTY upon perfectly bad docking
-        self.DOCKING_EE_VELOCITY_PENALTY      = 25 # A penalty given to the chaser, upon docking, for every 1 m/s end-effector collision velocity upon docking
+        self.DOCKING_EE_VELOCITY_PENALTY      = 50 # A penalty given to the chaser, upon docking, for every 1 m/s end-effector collision velocity upon docking
         self.DOCKING_ANGULAR_VELOCITY_PENALTY = 25 # A penalty given to the chaser, upon docking, for every 1 rad/s angular body velocity upon docking
         self.END_ON_FALL                      = True # end episode on a fall off the table        
         self.FALL_OFF_TABLE_PENALTY           = 100.
@@ -209,11 +209,15 @@ class Environment:
         self.CHECK_END_EFFECTOR_COLLISION     = True # Whether to do collision detection on the end-effector
         self.CHECK_END_EFFECTOR_FORBIDDEN     = True # Whether to expand the collision area to include the forbidden zone
         self.END_EFFECTOR_COLLISION_PENALTY   = 2 # [rewards/timestep] Penalty for end-effector collisions (with target or optionally with the forbidden zone)
-
+        self.GIVE_MID_WAY_REWARD              = True # Whether or not to give a reward mid-way towards the docking port to encourage the learning to move in the proper direction
+        self.MID_WAY_REWARD_RADIUS            = 0.3 # [ms] the radius from the DOCKING_PORT_MOUNT_POSITION that the mid-way reward is given
+        self.MID_WAY_REWARD                   = 25 # The value of the mid-way reward
+        
         
         # Some calculations that don't need to be changed
-        self.TABLE_BOUNDARY = Polygon(np.array([[0,0], [self.MAX_X_POSITION, 0], [self.MAX_X_POSITION, self.MAX_Y_POSITION], [0, self.MAX_Y_POSITION], [0,0]]))
-        self.VELOCITY_LIMIT    = np.array([self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY]) # [m/s, m/s, rad/s] maximum allowable velocity/angular velocity; a hard cap is enforced if this velocity is exceeded in kinematics & the controller enforces the limit in dynamics & experiment
+        self.TABLE_BOUNDARY    = Polygon(np.array([[0,0], [self.MAX_X_POSITION, 0], [self.MAX_X_POSITION, self.MAX_Y_POSITION], [0, self.MAX_Y_POSITION], [0,0]]))
+        self.VELOCITY_LIMIT    = np.array([self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, self.MAX_ANGULAR_VELOCITY, self.MAX_ANGULAR_VELOCITY, self.MAX_ANGULAR_VELOCITY]) # [m/s, m/s, rad/s, rad/s, rad/s, rad/s] maximum allowable velocity/angular velocity; which is enforced by the controller
+        self.ANGLE_LIMIT       = np.pi/2 # Used as a hard limit in the dynamics in order to protect the arm from hitting the chaser
         self.LOWER_STATE_BOUND = np.concatenate([self.LOWER_STATE_BOUND, np.tile(self.LOWER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # lower bound for each element of TOTAL_STATE
         self.UPPER_STATE_BOUND = np.concatenate([self.UPPER_STATE_BOUND, np.tile(self.UPPER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # upper bound for each element of TOTAL_STATE        
         self.OBSERVATION_SIZE  = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
@@ -237,9 +241,12 @@ class Environment:
 
         # Logging whether it is test time for this episode
         self.test_time = test_time
+        
+        # Resetting the mid-way flag
+        self.not_yet_mid_way = True
 
         # If we are randomizing the initial conditions and state
-        if self.RANDOMIZE:
+        if self.RANDOMIZE_INITIAL_CONDITIONS:
             # Randomizing initial state in Inertial frame
             self.chaser_position = self.INITIAL_CHASER_POSITION + np.random.randn(3)*[self.RANDOMIZATION_POSITION, self.RANDOMIZATION_POSITION, self.RANDOMIZATION_ANGLE]
             # Randomizing initial claser velocity in Inertial Frame
@@ -267,9 +274,11 @@ class Environment:
             self.arm_angles = self.INITIAL_ARM_ANGLES
             # Constand arm angular velocity in Body frame
             self.arm_angular_rates = self.INITIAL_ARM_RATES
-                
+        
+        # TODO: Build domain randomization
+        
         # Update docking component locations
-        self.update_docking_locations()
+        self.update_end_effector_and_docking_locations()
         
         # Check for collisions
         self.check_collisions()
@@ -299,24 +308,31 @@ class Environment:
         ## End-effector Section ##
         ##########################
         # Unpacking the state
-        x, y, theta = self.chaser_position
-        theta_1, theta_2, theta_3 = self.arm_angles
+        x, y, theta                           = self.chaser_position
+        x_dot, y_dot, theta_dot               = self.chaser_velocity
+        theta_1, theta_2, theta_3             = self.arm_angles
+        theta_1_dot, theta_2_dot, theta_3_dot = self.arm_angular_rates
 
         x_ee = x + self.B0*np.cos(self.PHI + theta) + (self.A1 + self.B1)*np.cos(np.pi/2 + theta + theta_1) + \
                (self.A2 + self.B2)*np.cos(np.pi/2 + theta + theta_1 + theta_2) + \
                (self.A3 + self.B3)*np.cos(np.pi/2 + theta + theta_1 + theta_2 + theta_3)
 
+        x_ee_dot = x_dot - self.B0*np.sin(self.PHI + theta)*(theta_dot) - (self.A1 + self.B1)*np.sin(np.pi/2 + theta + theta_1)*(theta_dot + theta_1_dot) - \
+                           (self.A2 + self.B2)*np.sin(np.pi/2 + theta + theta_1 + theta_2)*(theta_dot + theta_1_dot + theta_2_dot) - \
+                           (self.A3 + self.B3)*np.sin(np.pi/2 + theta + theta_1 + theta_2 + theta_3)*(theta_dot + theta_1_dot + theta_2_dot + theta_3_dot)
+                           
         y_ee = y + self.B0*np.sin(self.PHI + theta) + (self.A1 + self.B1)*np.sin(np.pi/2 + theta + theta_1) + \
                (self.A2 + self.B2)*np.sin(np.pi/2 + theta + theta_1 + theta_2) + \
                (self.A3 + self.B3)*np.sin(np.pi/2 + theta + theta_1 + theta_2 + theta_3)
+        
+        y_ee_dot = y_dot + self.B0*np.cos(self.PHI + theta)*(theta_dot) + (self.A1 + self.B1)*np.cos(np.pi/2 + theta + theta_1)*(theta_dot + theta_1_dot) + \
+                           (self.A2 + self.B2)*np.cos(np.pi/2 + theta + theta_1 + theta_2)*(theta_dot + theta_1_dot + theta_2_dot) + \
+                           (self.A3 + self.B3)*np.cos(np.pi/2 + theta + theta_1 + theta_2 + theta_3)*(theta_dot + theta_1_dot + theta_2_dot + theta_3_dot)
 
         # Updates the position of the end-effector in the Inertial frame
         self.end_effector_position = np.array([x_ee, y_ee])
         
         # End effector velocity
-        #TODO: End effector velocity
-        end_effector_velocity = self.chaser_velocity[:-1] + self.chaser_velocity[-1] * np.matmul(self.make_C_bI(self.chaser_position[-1]).T,[-self.END_EFFECTOR_POSITION[1], self.END_EFFECTOR_POSITION[0]])
-
         self.end_effector_velocity = np.array([x_ee_dot, y_ee_dot]) 
         
         
@@ -383,13 +399,14 @@ class Environment:
         self.arm_angles = new_chaser_state[3:6]
         self.chaser_velocity = new_chaser_state[6:9]
         self.arm_angular_rates = new_chaser_state[9:12]
-
+        
+        # TODO: Add hard stop to the arm angles using self.ANGLE_LIMIT
 
         # Step target's state ahead one timestep
         self.target_position += self.INITIAL_TARGET_VELOCITY * self.TIMESTEP
 
         # Update docking locations
-        self.update_docking_locations()
+        self.update_end_effector_and_docking_locations()
         
         # Check for collisions
         self.check_collisions()
@@ -416,6 +433,10 @@ class Environment:
         ########################################
         desired_accelerations = action
         
+        test controller
+        look at videos -> why is target moving?
+        desired_accelerations = np.array([0.00, -0.0, 0.0, -0., 0.0, -0.01])
+        
         current_velocities = np.concatenate([self.chaser_velocity, self.arm_angular_rates]) # [v_x, v_y, omega, theta1_dot, theta2_dot, theta3_dot]
         current_accelerations = (current_velocities - self.previous_velocities)/self.TIMESTEP # Approximating the current acceleration [a_x, a_y, alpha, alpha1, alpha2, alpha3]
         
@@ -433,7 +454,8 @@ class Environment:
         
         # Saving the current control effort for the next timestep
         self.previous_control_effort = control_effort
-
+        
+        print(self.time, current_accelerations, desired_accelerations,control_effort)
         # [F_x, F_y, torque, torque1, torque2, torque3]
         return control_effort
 
@@ -509,9 +531,10 @@ class Environment:
     
     def check_collisions(self):
         """ Calculate whether the different objects are colliding with the target.
-            It also checks if the chaser has fallen off the table.
+            It also checks if the chaser has fallen off the table, if the end-effector has docked,
+            and if it has reached the mid-way mark
         
-            Returns 4 booleans: end_effector_collision, forbidden_area_collision, chaser_target_collision
+            Returns 7 booleans: end_effector_collision, forbidden_area_collision, chaser_target_collision, chaser_on_table, mid_way, and docked
         """
         
         ##################################################
@@ -561,6 +584,8 @@ class Environment:
         self.end_effector_collision = False
         self.forbidden_area_collision = False
         self.chaser_target_collision = False
+        self.mid_way = False
+        self.docked = False
         
         if self.CHECK_END_EFFECTOR_COLLISION and end_effector_point.within(target_polygon):
             if self.test_time:
@@ -576,6 +601,25 @@ class Environment:
             if self.test_time:
                 print("Chaser/target collision")
             self.chaser_target_collision = True
+        
+        ##########################
+        ### Mid-way or docked? ###
+        ##########################
+        # Docking Polygon (circle)
+        docking_circle = Point(self.target_position[:-1] + np.matmul(C_Ib_target, self.DOCKING_PORT_MOUNT_POSITION)).buffer(self.SUCCESSFUL_DOCKING_RADIUS)
+        
+        # Mid-way Polygon (circle)
+        mid_way_circle = Point(self.target_position[:-1] + np.matmul(C_Ib_target, self.DOCKING_PORT_MOUNT_POSITION)).buffer(self.MID_WAY_REWARD_RADIUS)
+        
+        if self.GIVE_MID_WAY_REWARD and self.not_yet_mid_way and end_effector_point.within(mid_way_circle):
+            if self.test_time:
+                print("Mid Way!")
+            self.mid_way = True
+        
+        if end_effector_point.within(docking_circle):
+            if self.test_time:
+                print("Docked!")
+            self.docked = True
             
         ######################################
         ### Checking if chaser in on table ###
@@ -592,10 +636,10 @@ class Environment:
         """
 
         # If we've docked with the target
-        if np.linalg.norm(self.end_effector_position - self.docking_port_position) <= self.SUCCESSFUL_DOCKING_DISTANCE:
+        if self.docked:
             return True
 
-        # If we've fallen off the table, end the episode
+        # If we've fallen off the table or spun too many times, end the episode
         if not(self.chaser_on_table) or np.abs(self.chaser_position[-1]) > 6*np.pi:
             if self.test_time:
                 print("Fell off table!")
@@ -653,7 +697,7 @@ class Environment:
 
             if type(action) == bool:
                 # The signal to reset the environment was received
-                self.reset(action, test_time[0])
+                self.reset(test_time[0])
                 
                 # Return the TOTAL_STATE
                 self.env_to_agent.put(self.make_total_state())
@@ -667,7 +711,7 @@ class Environment:
 
                 ################################
                 ##### Step the environment #####
-                ################################                
+                ################################ 
                 reward, done = self.step(action)
 
                 # Return (TOTAL_STATE, reward, done)
@@ -963,7 +1007,7 @@ def dynamics_equations_of_motion(chaser_state, t, parameters):
 ##########################################
 ##### Function to animate the motion #####
 ##########################################
-def render(states, actions, desired_pose, instantaneous_reward_log, cumulative_reward_log, critic_distributions, target_critic_distributions, projected_target_distribution, bins, loss_log, guidance_position_log, episode_number, filename, save_directory):
+def render(states, actions, instantaneous_reward_log, cumulative_reward_log, critic_distributions, target_critic_distributions, projected_target_distribution, bins, loss_log, episode_number, filename, save_directory):
 
     # Load in a temporary environment, used to grab the physical parameters
     temp_env = Environment()
