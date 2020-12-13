@@ -126,6 +126,9 @@ class Environment:
         self.MAX_ANGULAR_VELOCITY             = np.pi/6 # [rad/s] for joints or body
         self.MAX_LINEAR_ACCELERATION          = 0.025 # [m/s^2]
         self.MAX_ANGULAR_ACCELERATION         = 0.1 # [rad/s^2]
+        self.MAX_THRUST                       = 0.5 # [N]
+        self.MAX_BODY_TORQUE                  = 0.1 # [Nm]
+        self.MAX_ARM_TORQUE                   = 0.05 # [Nm]
         self.LOWER_ACTION_BOUND               = np.array([-self.MAX_LINEAR_ACCELERATION, -self.MAX_LINEAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
         self.UPPER_ACTION_BOUND               = np.array([ self.MAX_LINEAR_ACCELERATION,  self.MAX_LINEAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
                 
@@ -434,7 +437,7 @@ class Environment:
         desired_accelerations = action
         
         #TODO: test controller
-        desired_accelerations = np.array([0.00, -0.0, 0.0, -0., 0.0, -0.01])
+        desired_accelerations = np.array([0.01, -0.0, 0.0, -0., 0.0, -0.00])
         
         current_velocities = np.concatenate([self.chaser_velocity, self.arm_angular_rates]) # [v_x, v_y, omega, theta1_dot, theta2_dot, theta3_dot]
         current_accelerations = (current_velocities - self.previous_velocities)/self.TIMESTEP # Approximating the current acceleration [a_x, a_y, alpha, alpha1, alpha2, alpha3]
@@ -454,8 +457,13 @@ class Environment:
         # Saving the current control effort for the next timestep
         self.previous_control_effort = control_effort
         
-        control_effort = np.array([0.1,0.0,-0.01,0,0,0.00])
+        control_effort[1:] = np.array([0.0,-0.00,0.000,-0.000,0.00000])
+        start here implement a transpose jacobian controller
+        # Clip commands to ensure they respect the hardware limits
+        limits = [np.tile(self.MAX_THRUST,2), self.MAX_BODY_TORQUE, np.tile(self.MAX_ARM_TORQUE,3)]
+        control_effort = np.clip(control_effort, -limits, limits)
         
+        print(current_accelerations,control_effort)
         # [F_x, F_y, torque, torque1, torque2, torque3]
         return control_effort
 
@@ -997,9 +1005,7 @@ def dynamics_equations_of_motion(chaser_state, t, parameters):
 
     second_derivatives = np.matmul(np.linalg.inv(MassMatrix),(control_effort - np.matmul(CoriolisMatrix, state_dot)))
 
-    #first_derivatives = np.array([x_dot, y_dot, theta_dot, theta_dot + theta_1_dot, theta_dot + theta_1_dot + theta_2_dot, theta_dot + theta_1_dot + theta_2_dot + theta_3_dot])
     first_derivatives = np.array([x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot])
-    # TODO: Figure this out!
 
     full_derivative = np.concatenate([first_derivatives, second_derivatives])
 
