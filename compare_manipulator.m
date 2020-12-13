@@ -7,17 +7,17 @@ clc
 x = 3.0;
 y = 1.0;
 theta = 0.0;
-theta_1 = pi/8;
-theta_2 = pi;
-theta_3 = -pi/3;
-x_dot= 2.6;
-y_dot = -0.875;
+theta_1 = 0;
+theta_2 = 0;
+theta_3 = 0;
+x_dot= 0;
+y_dot = 0;
 theta_dot = 0;
-theta_1_dot = 0.1;
-theta_2_dot = -3;
-theta_3_dot = 0.22;
+theta_1_dot = 0.0;
+theta_2_dot = 0;
+theta_3_dot = 0.0;
 
-control_effort = [0.0, 00, -0, 8, -8, 8]';
+control_effort = [0.1, 00, -0, 0, -0, 0.0]';
 
 q_dot = [x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot]';
 

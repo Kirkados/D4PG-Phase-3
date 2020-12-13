@@ -20,7 +20,7 @@ class Settings:
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment
     RECORD_VIDEO           = True
-    VIDEO_RECORD_FREQUENCY = 20 # 20 Multiples of "CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES"
+    VIDEO_RECORD_FREQUENCY = 1 # 20 Multiples of "CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES"
     NOISELESS_AT_TEST_TIME = True # Whether or not to test without action noise (Keep at True unless debugging)
     LEARN_FROM_PIXELS      = False # False = learn from state (fully observed); True = learn from pixels (partially observed)
     RESUME_TRAINING        = False # If True, be sure to set "RUN_NAME" to the previous run's filename
@@ -34,7 +34,7 @@ class Settings:
 
     # Hyperparameters
     NUMBER_OF_ACTORS        = 1
-    NUMBER_OF_EPISODES      = 8e4 # that each agent will perform
+    NUMBER_OF_EPISODES      = 1#8e4 # that each agent will perform
     MAX_TRAINING_ITERATIONS = 1e8 # of neural networks
     ACTOR_LEARNING_RATE     = 0.0001
     CRITIC_LEARNING_RATE    = 0.0001

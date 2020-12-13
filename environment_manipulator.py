@@ -165,7 +165,7 @@ class Environment:
         self.TIMESTEP                         =   0.2 # [s]
         self.DYNAMICS_DELAY                   =   0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH =   0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
-        self.MAX_NUMBER_OF_TIMESTEPS          = 15 # per episode
+        self.MAX_NUMBER_OF_TIMESTEPS          = 200 # per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
         self.KI                               = [10, 10, 0.02, 0.0025, 0.0025, 0.0025] # Integral gain for the integral-linear acceleration controller in [X, Y, angle, shoulder, elbow, wrist] (how fast does the commanded acceleration get realized)
@@ -175,15 +175,15 @@ class Environment:
         self.PHI      = np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
         self.B0       = (self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
         self.MASS     = 10.0  # [kg] for chaser
-        self.M1       = 1 # [kg] link mass
-        self.M2       = 1 # [kg] link mass
-        self.M3       = 1 # [kg] link mass
-        self.A1       = 0.1 # [m] base of link to centre of mass
-        self.B1       = 0.1 # [m] centre of mass to end of link
-        self.A2       = 0.1 # [m] base of link to centre of mass
-        self.B2       = 0.1 # [m] centre of mass to end of link
-        self.A3       = 0.1 # [m] base of link to centre of mass
-        self.B3       = 0.1 # [m] centre of mass to end of link
+        self.M1       = 0.3377 # [kg] link mass
+        self.M2       = 0.3281 # [kg] link mass
+        self.M3       = 0.0111 # [kg] link mass
+        self.A1       = 0.1933 # [m] base of link to centre of mass
+        self.B1       = 0.1117 # [m] centre of mass to end of link
+        self.A2       = 0.1993 # [m] base of link to centre of mass
+        self.B2       = 0.1057 # [m] centre of mass to end of link
+        self.A3       = 0.0621 # [m] base of link to centre of mass
+        self.B3       = 0.0159 # [m] centre of mass to end of link
         self.INERTIA  = 1/12*self.MASS*(self.LENGTH**2 + self.LENGTH**2) # 0.15 [kg m^2] base inertia
         self.INERTIA1 = 1/12*self.M1*(self.A1 + self.B1)**2 # [kg m^2] link inertia
         self.INERTIA2 = 1/12*self.M2*(self.A2 + self.B2)**2 # [kg m^2] link inertia
@@ -403,8 +403,8 @@ class Environment:
         # TODO: Add hard stop to the arm angles using self.ANGLE_LIMIT
 
         # Step target's state ahead one timestep
-        self.target_position += self.INITIAL_TARGET_VELOCITY * self.TIMESTEP
-
+        self.target_position += self.target_velocity * self.TIMESTEP
+        
         # Update docking locations
         self.update_end_effector_and_docking_locations()
         
@@ -433,8 +433,7 @@ class Environment:
         ########################################
         desired_accelerations = action
         
-        test controller
-        look at videos -> why is target moving?
+        #TODO: test controller
         desired_accelerations = np.array([0.00, -0.0, 0.0, -0., 0.0, -0.01])
         
         current_velocities = np.concatenate([self.chaser_velocity, self.arm_angular_rates]) # [v_x, v_y, omega, theta1_dot, theta2_dot, theta3_dot]
@@ -455,7 +454,8 @@ class Environment:
         # Saving the current control effort for the next timestep
         self.previous_control_effort = control_effort
         
-        print(self.time, current_accelerations, desired_accelerations,control_effort)
+        control_effort = np.array([0.1,0.0,-0.01,0,0,0.00])
+        
         # [F_x, F_y, torque, torque1, torque2, torque3]
         return control_effort
 
@@ -482,7 +482,7 @@ class Environment:
             reward += self.DOCKING_REWARD
             
             # Penalize for end-effector angle
-            end_effector_angle_inertial = self.target_position[-1] + np.sum(self.arm_angles)
+            end_effector_angle_inertial = self.chaser_position[-1] + np.sum(self.arm_angles)
             
             # Docking cone angle in the target body frame
             docking_cone_angle_body = np.arctan2(self.DOCKING_PORT_CORNER1_POSITION[1] - self.DOCKING_PORT_CORNER2_POSITION[1], self.DOCKING_PORT_CORNER1_POSITION[0] - self.DOCKING_PORT_CORNER2_POSITION[0])
@@ -997,7 +997,9 @@ def dynamics_equations_of_motion(chaser_state, t, parameters):
 
     second_derivatives = np.matmul(np.linalg.inv(MassMatrix),(control_effort - np.matmul(CoriolisMatrix, state_dot)))
 
-    first_derivatives = np.array([x_dot, y_dot, theta_dot, theta_dot + theta_1_dot, theta_dot + theta_1_dot + theta_2_dot, theta_dot + theta_1_dot + theta_2_dot + theta_3_dot])
+    #first_derivatives = np.array([x_dot, y_dot, theta_dot, theta_dot + theta_1_dot, theta_dot + theta_1_dot + theta_2_dot, theta_dot + theta_1_dot + theta_2_dot + theta_3_dot])
+    first_derivatives = np.array([x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot])
+    # TODO: Figure this out!
 
     full_derivative = np.concatenate([first_derivatives, second_derivatives])
 
@@ -1025,7 +1027,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     chaser_x, chaser_y, chaser_theta, theta_1, theta_2, theta_3 = states[:,0], states[:,1], states[:,2], states[:,6], states[:,7], states[:,8]
     
     # Target positions
-    target_x, target_y, target_theta = states[:,10], states[:,11], states[:,12]
+    target_x, target_y, target_theta = states[:,12], states[:,13], states[:,14]
 
     # Extracting physical properties
     LENGTH = temp_env.LENGTH
