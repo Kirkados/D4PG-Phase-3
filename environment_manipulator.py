@@ -459,6 +459,14 @@ class Environment:
         
         control_effort[1:] = np.array([0.0,-0.00,0.000,-0.000,0.00000])
         start here implement a transpose jacobian controller
+        
+        """
+        torque = J^T * F
+        where F is [ee_f_x, ee_f_y, ee_ang_accel]
+        J = self.make_jacobian()
+        """
+        
+        
         # Clip commands to ensure they respect the hardware limits
         limits = [np.tile(self.MAX_THRUST,2), self.MAX_BODY_TORQUE, np.tile(self.MAX_ARM_TORQUE,3)]
         control_effort = np.clip(control_effort, -limits, limits)
@@ -466,7 +474,13 @@ class Environment:
         print(current_accelerations,control_effort)
         # [F_x, F_y, torque, torque1, torque2, torque3]
         return control_effort
-
+    
+    def make_jacobian(self):
+        # This method calculates the jacobian for the arm
+        
+        jacobian = 4
+        
+        return jacobian
 
     def reward_function(self, action):
         # Returns the reward for this TIMESTEP as a function of the state and action
