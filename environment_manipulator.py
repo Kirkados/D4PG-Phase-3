@@ -144,9 +144,9 @@ class Environment:
                                                           3.7, 2.4, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Target
                                                           3.7, 2.4, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY]) # End-effector
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
-        self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.2, 0.0]) # [m, m, rad]
+        self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.2, -np.pi/2]) # [m, m, rad]
         self.INITIAL_CHASER_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
-        self.INITIAL_ARM_ANGLES               = np.array([np.pi/2, np.pi/2, 0.0]) # [rad, rad, rad]
+        self.INITIAL_ARM_ANGLES               = np.array([np.pi/2, 0, 0]) # [rad, rad, rad]
         self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
         self.INITIAL_TARGET_POSITION          = np.array([2.0, 1.0, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
@@ -165,10 +165,10 @@ class Environment:
         self.MAX_V                            =  125.
         self.N_STEP_RETURN                    =   5
         self.DISCOUNT_FACTOR                  =   0.95**(1/self.N_STEP_RETURN)
-        self.TIMESTEP                         =   0.2 # [s]
+        self.TIMESTEP                         =   0.058 # [s]
         self.DYNAMICS_DELAY                   =   0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH =   0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
-        self.MAX_NUMBER_OF_TIMESTEPS          = 200 # per episode
+        self.MAX_NUMBER_OF_TIMESTEPS          = 300 # per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
         self.KI                               = [10, 10, 0.02, 0.0025, 0.0025, 0.0025] # Integral gain for the integral-linear acceleration controller in [X, Y, angle, shoulder, elbow, wrist] (how fast does the commanded acceleration get realized)
@@ -457,28 +457,123 @@ class Environment:
         # Saving the current control effort for the next timestep
         self.previous_control_effort = control_effort
         
-        control_effort[1:] = np.array([0.0,-0.00,0.000,-0.000,0.00000])
-        start here implement a transpose jacobian controller
-        
+        #control_effort[1:] = np.array([0.0,-0.00,0.000,-0.000,0.00000])
+                
         """
+        [v,w]_3 = J*qdot
         torque = J^T * F
-        where F is [ee_f_x, ee_f_y, ee_ang_accel]
+        where F is [ee_f_x, ee_f_y, ee_f_z, ee_tau_x, ee_tau_y, ee_tau_z]
+        where [v,w]_3 is [ee_v_x, ee_v_y, ee_v_z, ee_omega_x, ee_omega_y, ee_omega_z]
         J = self.make_jacobian()
         """
+        #q = np.concatenate([self.chaser_position, self.arm_angles]).reshape([6,1])
+        #qdot = np.concatenate([self.chaser_velocity, self.arm_angular_rates])
+        
+        #qdot = np.array([0,0,0,1,0,0]).reshape([6,1])
+        
+        #v_w = np.matmul(self.make_jacobian(),qdot)
+        
+        desired_ee_pose = np.array([1.5,1.5,np.pi]).reshape([3,1])
+        #print(np.concatenate([self.end_effector_position.reshape([2,1]),np.array(np.sum(self.arm_angles) + self.chaser_position[-1]).reshape([1,1])]))
+        current_pose = np.concatenate([self.end_effector_position.reshape([2,1]),np.array(np.sum(self.arm_angles) + self.chaser_position[-1]).reshape([1,1])])
+        ee_pose_error = desired_ee_pose - current_pose
+        
+        desired_ee_pose_rate = np.array([0,0,0]).reshape([3,1])
+        current_pose_rate = np.concatenate([self.end_effector_velocity.reshape([2,1]), np.array(np.sum(self.arm_angular_rates) + self.chaser_velocity[-1]).reshape([1,1])])
+        ee_pose_error_dot = desired_ee_pose_rate - current_pose_rate
+        
+        #print(ee_pose_error_dot.shape)
+        
+        Kp = np.array([0.01,0.01,0.0001]).reshape([3,1])
+        Kd = np.array([0.01,0.01,0.0001]).reshape([3,1])
+        force = Kp*ee_pose_error + Kd*ee_pose_error_dot
+        #print(force)
+        F_ee = np.array([force[0][0],force[1][0],0,0,0,force[2][0]]).reshape([6,1]) # [Fx, Fy, Fz, tx, ty, tz]
+        
+        #F_ee = np.array([0.1,0.,0,0,0,0.00]).reshape([6,1])
+        
+        #print(F_ee)
+        torque_q = np.matmul(self.make_jacobian().T,F_ee)
+        
+        print(ee_pose_error, torque_q)
+        #raise SystemExit
+        #print("Torque", torque_q)
+        
+        #torque_q = np.array([0,-1,0,0,0,0]).reshape([6,1])
+        
+        # Scaling to the forces on the body
+        #torque_q = torque_q * np.array([10,10,10,1,1,1]).reshape([6,1])
+        
+        #v_w = np.array([0,0,0,0,0,0]).reshape([6,1])
+        #qdot_desired = np.matmul(np.linalg.pinv(self.make_jacobian()), action)
+        #self.chaser_velocity[0] = qdot_desired[0]
+        #self.chaser_velocity[1] = qdot_desired[1]
+        #self.chaser_velocity[2] = qdot_desired[2]
+        #self.arm_angular_rates[0] = qdot_desired[3]
+        #self.arm_angular_rates[1] = qdot_desired[4]
+        #self.arm_angular_rates[2] = qdot_desired[5]
+        
+        #self.update_end_effector_and_docking_locations()
+        #print(self.end_effector_position, self.end_effector_velocity)
+
+        #print(qdot_desired)
+        
+        # TODO: Clean up!
         
         
         # Clip commands to ensure they respect the hardware limits
-        limits = [np.tile(self.MAX_THRUST,2), self.MAX_BODY_TORQUE, np.tile(self.MAX_ARM_TORQUE,3)]
-        control_effort = np.clip(control_effort, -limits, limits)
+        #limits = [np.tile(self.MAX_THRUST,2), self.MAX_BODY_TORQUE, np.tile(self.MAX_ARM_TORQUE,3)]
+        #control_effort = np.clip(control_effort, -limits, limits)
         
-        print(current_accelerations,control_effort)
+        #print(current_accelerations,control_effort)
         # [F_x, F_y, torque, torque1, torque2, torque3]
-        return control_effort
+        return torque_q
     
     def make_jacobian(self):
         # This method calculates the jacobian for the arm
         
-        jacobian = 4
+        
+        # TODO: Clean up
+        PHI = self.PHI
+        q0 = self.chaser_position[-1]
+        q1 = self.arm_angles[0]
+        q2 = self.arm_angles[1]
+        q3 = self.arm_angles[2]
+        
+        b0 = self.B0
+        a1 = self.A1
+        b1 = self.B1
+        a2 = self.A2
+        b2 = self.B2
+        a3 = self.A3
+        
+        L1 = a1 + b1
+        L2 = a2 + b2
+        
+        S0 = np.sin(PHI + q0)
+        S1 = np.sin(PHI + q0 + q1) 
+        S2 = np.sin(PHI + q0 + q1 + q2) 
+        S3 = np.sin(PHI + q0 + q1 + q2 + q3) 
+        C0 = np.cos(PHI + q0)
+        C1 = np.cos(PHI + q0 + q1) 
+        C2 = np.cos(PHI + q0 + q1 + q2)
+        C3 = np.cos(PHI + q0 + q1 + q2 + q3) 
+        
+        Jc3_13 = -b0*S0 - L1*S1 - L2*S2 - a3*S3
+        Jc3_14 = -L1*S1 -L2*S2 - a3*S3
+        Jc3_15 = -L2*S2 -a3*S3
+        Jc3_16 = -a3*S3
+        Jc3_23 = b0*C0 + L1*C1 + L2*C2 +a3*C3
+        Jc3_24 = L1*C1 + L2*C2 + a3*C3
+        Jc3_25 = L2*C2 + a3*C3
+        Jc3_26 = a3*C3
+        
+        jacobian = np.array([[1,0,Jc3_13,Jc3_14,Jc3_15,Jc3_16],
+                             [0,1,Jc3_23,Jc3_24,Jc3_25,Jc3_26],
+                             [0,0,0,0,0,0],
+                             [0,0,0,0,0,0],
+                             [0,0,0,0,0,0],
+                             [0,0,1,1,1,1]])
         
         return jacobian
 
@@ -750,7 +845,7 @@ def dynamics_equations_of_motion(chaser_state, t, parameters):
     x, y, theta, theta_1, theta_2, theta_3, x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot = chaser_state
     
     # state = x, y, theta, theta_1, theta_2, theta_3
-    state_dot = x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot
+    state_dot = np.array([x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot]).reshape([6,1])
 
     control_effort, LENGTH, PHI, B0, \
     MASS, M1, M2, M3, \
@@ -1016,13 +1111,16 @@ def dynamics_equations_of_motion(chaser_state, t, parameters):
                                -t15*t16-t21*t22-t28*t29,-t16*t35-t22*t36-t29*t37,-t66*t67-t54*t82-t70*t71-t59*t84-t77*t78-t46*(t40+t41+t42+t43+t44+t85+t86+t87+t88+t89),-t66*t67-t70*t71-t77*t78,t112+t114-t70*t71,t122+t128,
                                -t21*t22-t28*t29,-t22*t36-t29*t37,-t54*t82-t70*t71-t59*t84-t66*t102-t77*t107,-t70*t71-t66*t102-t77*t107,-A3*M3*theta_3_dot*t8*t70,A3*M3*t8*t70*(theta_dot+theta_1_dot+theta_2_dot),
                                A3*M3*t38*np.sin(t39),-A3*M3*t38*np.cos(t39),-A3*B0*M3*t38*t59-A3*M3*t8*t38*t70-A3*M3*t2*t38*t77,-A3*M3*t8*t38*t70-A3*M3*t2*t38*t77,-A3*M3*t8*t38*t70,00]).reshape([6,6], order='F') # default order is different than matlab
-
+            
     second_derivatives = np.matmul(np.linalg.inv(MassMatrix),(control_effort - np.matmul(CoriolisMatrix, state_dot)))
 
-    first_derivatives = np.array([x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot])
-
-    full_derivative = np.concatenate([first_derivatives, second_derivatives])
-
+    first_derivatives = np.array([x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot]).reshape([6,1])
+    
+    full_derivative = np.concatenate([first_derivatives, second_derivatives]).squeeze()
+    
+    #print(full_derivative)
+    #raise SystemExit
+    
     return full_derivative
 
 
