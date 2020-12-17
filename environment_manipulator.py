@@ -168,7 +168,7 @@ class Environment:
         self.TIMESTEP                         =   0.058 # [s]
         self.DYNAMICS_DELAY                   =   0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH =   0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
-        self.MAX_NUMBER_OF_TIMESTEPS          = 300 # per episode
+        self.MAX_NUMBER_OF_TIMESTEPS          = 100 # per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
         self.KI                               = [10, 10, 0.02, 0.0025, 0.0025, 0.0025] # Integral gain for the integral-linear acceleration controller in [X, Y, angle, shoulder, elbow, wrist] (how fast does the commanded acceleration get realized)
@@ -473,7 +473,7 @@ class Environment:
         
         #v_w = np.matmul(self.make_jacobian(),qdot)
         
-        desired_ee_pose = np.array([1.5,1.5,np.pi]).reshape([3,1])
+        desired_ee_pose = np.array([2,1.15,np.pi]).reshape([3,1])
         #print(np.concatenate([self.end_effector_position.reshape([2,1]),np.array(np.sum(self.arm_angles) + self.chaser_position[-1]).reshape([1,1])]))
         current_pose = np.concatenate([self.end_effector_position.reshape([2,1]),np.array(np.sum(self.arm_angles) + self.chaser_position[-1]).reshape([1,1])])
         ee_pose_error = desired_ee_pose - current_pose
@@ -484,8 +484,8 @@ class Environment:
         
         #print(ee_pose_error_dot.shape)
         
-        Kp = np.array([0.01,0.01,0.0001]).reshape([3,1])
-        Kd = np.array([0.01,0.01,0.0001]).reshape([3,1])
+        Kp = np.array([0.1,0.1,0.001]).reshape([3,1])
+        Kd = np.array([0.1,0.1,0.001]).reshape([3,1])
         force = Kp*ee_pose_error + Kd*ee_pose_error_dot
         #print(force)
         F_ee = np.array([force[0][0],force[1][0],0,0,0,force[2][0]]).reshape([6,1]) # [Fx, Fy, Fz, tx, ty, tz]
@@ -519,6 +519,7 @@ class Environment:
         #print(qdot_desired)
         
         # TODO: Clean up!
+        Clean up first thing!
         
         
         # Clip commands to ensure they respect the hardware limits
