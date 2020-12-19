@@ -126,9 +126,10 @@ class Environment:
         self.MAX_ANGULAR_VELOCITY             = np.pi/6 # [rad/s] for joints or body
         self.MAX_LINEAR_ACCELERATION          = 0.025 # [m/s^2]
         self.MAX_ANGULAR_ACCELERATION         = 0.1 # [rad/s^2]
-        self.MAX_THRUST                       = 0.5 # [N]
-        self.MAX_BODY_TORQUE                  = 0.1 # [Nm]
-        self.MAX_ARM_TORQUE                   = 0.05 # [Nm]
+        self.MAX_THRUST                       = 0.5 # [N] Experimental limitation
+        self.MAX_BODY_TORQUE                  = 0.064 # [Nm] # Experimental limitation
+        self.MAX_JOINT1n2_TORQUE              = 0.02 # [Nm] # Limited by the simulator NOT EXPERIMENT
+        self.MAX_JOINT3_TORQUE                = 0.0002 # [Nm] Limited by the simulator NOT EXPERIMENT
         self.LOWER_ACTION_BOUND               = np.array([-self.MAX_LINEAR_ACCELERATION, -self.MAX_LINEAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
         self.UPPER_ACTION_BOUND               = np.array([ self.MAX_LINEAR_ACCELERATION,  self.MAX_LINEAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
                 
@@ -171,9 +172,8 @@ class Environment:
         self.MAX_NUMBER_OF_TIMESTEPS          = 100 # per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
-        self.KI                               = [10, 10, 0.15] # [Tuned Dec 17 for 0.2s timestep] Integral gain for the integral-linear acceleration controller of the body (x, y, theta)
-        self.KI_ee                            = [0.0001, 0.0001, 0.00001] # Integral gain for integral acceleration controller of the end-effector (x, y, theta)
-                
+        self.KI                               = [10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.2s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
+                                
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
         self.LENGTH   = 0.3 # [m] side length
         self.PHI      = np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
@@ -220,7 +220,7 @@ class Environment:
         
         # Some calculations that don't need to be changed
         self.TABLE_BOUNDARY    = Polygon(np.array([[0,0], [self.MAX_X_POSITION, 0], [self.MAX_X_POSITION, self.MAX_Y_POSITION], [0, self.MAX_Y_POSITION], [0,0]]))
-        self.VELOCITY_LIMIT    = np.array([self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY]) # [m/s, m/s, rad/s] maximum allowable velocity/angular velocity; enforced by the controller
+        self.VELOCITY_LIMIT    = np.array([self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, 2*self.MAX_ANGULAR_VELOCITY, 3*self.MAX_ANGULAR_VELOCITY, 4*self.MAX_ANGULAR_VELOCITY]) # [m/s, m/s, rad/s] maximum allowable velocity/angular velocity; enforced by the controller
         self.ANGLE_LIMIT       = np.pi/2 # Used as a hard limit in the dynamics in order to protect the arm from hitting the chaser
         self.LOWER_STATE_BOUND = np.concatenate([self.LOWER_STATE_BOUND, np.tile(self.LOWER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # lower bound for each element of TOTAL_STATE
         self.UPPER_STATE_BOUND = np.concatenate([self.UPPER_STATE_BOUND, np.tile(self.UPPER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # upper bound for each element of TOTAL_STATE        
@@ -288,13 +288,8 @@ class Environment:
         self.check_collisions()
 
         # Initializing the previous velocity and control effort for the integral-acceleration controller
-        self.previous_body_velocities     = np.zeros(3)
-        self.previous_body_control_effort = np.zeros(3)
-        self.previous_ee_pose_velocity    = np.zeros(3)
-        self.previous_ee_control_effort   = np.zeros(3)
-        
-        self.previous_arm_rates = np.zeros(3)
-        self.previous_control_effort = np.zeros(6)
+        self.previous_velocity       = np.zeros(self.ACTION_SIZE)
+        self.previous_control_effort = np.zeros(self.ACTION_SIZE)
 
         # Resetting the time
         self.time = 0.
@@ -440,110 +435,75 @@ class Environment:
         ########################################
         ### Integral-acceleration controller ###
         ########################################
-        desired_body_accelerations = action[0:3]
-        desired_ee_accelerations   = action[3:6]
+        desired_accelerations = action
+        desired_accelerations = np.array([0.1,-0.1,-0.1,-0.1,0.1,0.1])
         
-        desired_body_accelerations = np.array([0,0,0]) 
-        desired_ee_accelerations = np.array([0.,0.1,0])
+        # Stopping the command of additional velocity when we are already at our maximum
+        current_velocity = np.concatenate([self.chaser_velocity, self.arm_angular_rates])        
+        desired_accelerations[(np.abs(current_velocity) > self.VELOCITY_LIMIT) & (np.sign(desired_accelerations) == np.sign(current_velocity))] = 0
         
-        #TODO: test controller
-
-        ####################################################
-        ### Integral-acceleration controller on the body ###
-        ####################################################       
-        current_body_velocity = self.chaser_velocity
-        current_body_accelerations = (current_body_velocity - self.previous_body_velocities)/self.TIMESTEP # Approximating the current acceleration [a_x, a_y, alpha, alpha1, alpha2, alpha3]
+        # Approximating the current accelerations
+        current_accelerations = (current_velocity - self.previous_velocity)/self.TIMESTEP
+        self.previous_velocity = current_velocity
         
-        # Checking whether our velocity is too large AND the acceleration is trying to increase said velocity... in which case we set the desired_linear_acceleration to zero.
-        #desired_body_accelerations[(np.abs(current_body_velocity) > self.VELOCITY_LIMIT) & (np.sign(desired_body_accelerations) == np.sign(current_body_velocity))] = 0        
-        # TOD: Velocity cap is ignored
+        """ This integral-acceleration transpose jacobian controller is implemented but not used """
+#            #######################################################################
+#            ### Integral-acceleration transpose Jacobian controller for the arm ###
+#            #######################################################################
+#            """
+#            Using the jacobian, J, for joint 3 as described in Eq 3.31 of Alex Crain's MASc Thesis
+#            v = velocity of end-effector in inertial frame
+#            w = angular velocity of end-effector about its centre of mass
+#            q = [chaser_x, chaser_y, theta, theta_1, theta_2, theta_3]
+#            [v,w] = J*qdot
+#            Therefore, using the transpose Jacobian trick
+#            forces_torques = J.T * F_ee
+#            where F_ee is [ee_f_x, ee_f_y, ee_tau_z]
+#            and forces_torques is [body_Fx, body_Fy, body_tau, tau1, tau2, tau3]
+#            J = self.make_jacobian()
+#            """
+#    
+#            current_ee_velocity = np.array([self.end_effector_velocity[0], self.end_effector_velocity[1], np.sum((self.arm_angular_rates)) + self.chaser_velocity[-1]])
+#            current_ee_pose_acceleration = (current_ee_velocity - self.previous_ee_pose_velocity)/self.TIMESTEP
+#            
+#            # Calculating the end-effector acceleration error
+#            ee_acceleration_error = desired_ee_accelerations - current_ee_pose_acceleration
+#            
+#            # End-effector control effort
+#            ee_control_effort = self.previous_ee_control_effort + self.KI[3:] * ee_acceleration_error
+#            
+#            # Saving the current velocity and control effort for the next timetsep
+#            self.previous_ee_pose_velocity = current_ee_pose_velocity
+#            self.previous_ee_control_effort = ee_control_effort
+#            
+#            # Using the Transpose Jacobian
+#            joint_space_torque = np.matmul(self.make_jacobian().T, ee_control_effort)
+#    
+#            # Assuming the body control effort was calculated previously, concatenate/add it here
+#            control_effort = np.concatenate([body_control_effort, joint_space_torque[3:]]).reshape([6,1])
+#            
+  
+        ##########################################################
+        ### Integral-acceleration controller on the all states ###
+        ########################################################## 
         
+        # Calculate the acceleration error
+        acceleration_error = desired_accelerations - current_accelerations
         
-        # Calculating body acceleration error
-        body_acceleration_error = desired_body_accelerations - current_body_accelerations
-        
-        # Integral-acceleration control
-        body_control_effort = self.previous_body_control_effort + self.KI * body_acceleration_error
-
-        # Saving the current velocity and control effort for the next timetsep
-        self.previous_body_velocities = current_body_velocity
-        self.previous_body_control_effort = body_control_effort
-        
-        #######################################################################
-        ### Integral-acceleration transpose Jacobian controller for the arm ###
-        #######################################################################
-        """
-        [v,w]_3 = J*qdot
-        torque = J^T * F
-        where F is [ee_f_x, ee_f_y, ee_f_z, ee_tau_x, ee_tau_y, ee_tau_z]
-        where [v,w]_3 is [ee_v_x, ee_v_y, ee_v_z, ee_omega_x, ee_omega_y, ee_omega_z]
-        J = self.make_jacobian()
-        """
-
-        current_ee_pose_velocity = np.array([self.end_effector_velocity[0], self.end_effector_velocity[1], np.sum((self.arm_angular_rates)) + self.chaser_velocity[-1]])
-        current_ee_pose_acceleration = (current_ee_pose_velocity - self.previous_ee_pose_velocity)/self.TIMESTEP
-        
-        # Checking if our velocity is too large and the acceleration is trying to increase the velocity
-        #desired_ee_accelerations[(np.abs(current_ee_pose_velocity) > self.VELOCITY_LIMIT) & (np.sign(desired_ee_accelerations) == np.sign(current_ee_pose_velocity))] = 0  
-        # TODO: Velocity cap is ignored
-        
-        # Calculating the end-effector acceleration error
-        ee_acceleration_error = desired_ee_accelerations - current_ee_pose_acceleration
-        
-        # End-effector control effort
-        ee_control_effort = self.previous_ee_control_effort + self.KI_ee * ee_acceleration_error
-        
-        # Saving the current velocity and control effort for the next timetsep
-        self.previous_ee_pose_velocity = current_ee_pose_velocity
-        self.previous_ee_control_effort = ee_control_effort
-        
-        
-        joint_space_torque = np.matmul(self.make_jacobian().T, ee_control_effort)
-
-        
-        control_effort = np.concatenate([body_control_effort, joint_space_torque[3:]]).reshape([6,1])
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        ################################################
-        ### Trying a joint space integral controller ###
-        ################################################
-        #current_body_accelerations
-        current_arm_rates = self.arm_angular_rates
-        current_arm_acceleration = (current_arm_rates - self.previous_arm_rates)/self.TIMESTEP
-        self.previous_arm_rates = current_arm_rates
-        
-        self.KI_test = [10,10,0.15, 0.018,0.0075,0.000044]
-        desired_accelerations = np.array([0.0,-0.0,-0.1,-0.,0.,0.1])
-        acceleration_error = desired_accelerations - np.concatenate([current_body_accelerations, current_arm_acceleration])
-        
-        control_effort = self.previous_control_effort + self.KI_test * acceleration_error
+        # Apply the integral controller 
+        control_effort = self.previous_control_effort + self.KI * acceleration_error
         self.previous_control_effort = control_effort
-        control_effort = control_effort.reshape([6,1])
-        
 
-        print(current_body_accelerations, current_arm_acceleration)
-        #print(control_effort)
-        #print(current_arm_acceleration[0])
-    
-
-
-        # TODO: Clip commands
         # Clip commands to ensure they respect the hardware limits
-        #limits = [np.tile(self.MAX_THRUST,2), self.MAX_BODY_TORQUE, np.tile(self.MAX_ARM_TORQUE,3)]
-        #control_effort = np.clip(control_effort, -limits, limits)
+        limits = np.concatenate([np.tile(self.MAX_THRUST,2), [self.MAX_BODY_TORQUE], np.tile(self.MAX_JOINT1n2_TORQUE,2), [self.MAX_JOINT3_TORQUE]])
+        
+        control_effort = np.clip(control_effort, -limits, limits)
+        
+        print(control_effort)
         
 
         # [F_x, F_y, torque, torque1, torque2, torque3]
-        return control_effort
+        return control_effort.reshape([self.ACTION_SIZE,1])
     
     def make_jacobian(self):
         # This method calculates the jacobian for the arm
