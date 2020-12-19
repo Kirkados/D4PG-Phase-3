@@ -146,7 +146,7 @@ class Environment:
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
         self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.2, -np.pi/2]) # [m, m, rad]
         self.INITIAL_CHASER_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
-        self.INITIAL_ARM_ANGLES               = np.array([np.pi/2, 71*np.pi/180, 0]) # [rad, rad, rad]
+        self.INITIAL_ARM_ANGLES               = np.array([np.pi/2, np.pi/2, 0]) # [rad, rad, rad]
         self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
         self.INITIAL_TARGET_POSITION          = np.array([2.0, 1.0, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
@@ -521,8 +521,8 @@ class Environment:
         current_arm_acceleration = (current_arm_rates - self.previous_arm_rates)/self.TIMESTEP
         self.previous_arm_rates = current_arm_rates
         
-        self.KI_test = [10,10,0.15, 0.018,0.0075,0]
-        desired_accelerations = np.array([0.1,-0.1,-0.1,-0.1,0.1,0])
+        self.KI_test = [10,10,0.15, 0.018,0.0075,0.000044]
+        desired_accelerations = np.array([0.0,-0.0,-0.1,-0.,0.,0.1])
         acceleration_error = desired_accelerations - np.concatenate([current_body_accelerations, current_arm_acceleration])
         
         control_effort = self.previous_control_effort + self.KI_test * acceleration_error
