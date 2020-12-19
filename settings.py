@@ -7,7 +7,6 @@
 
 
 """
-import numpy as np
 
 class Settings:
 
@@ -16,7 +15,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'joint_integral_control' # use just the name. If trying to restore from file, use name along with timestamp
+    RUN_NAME               = 'calibrate' # use just the name. If trying to restore from file, use name along with timestamp
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment
     RECORD_VIDEO           = True

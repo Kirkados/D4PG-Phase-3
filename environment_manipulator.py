@@ -145,34 +145,37 @@ class Environment:
                                                           3.7, 2.4, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Target
                                                           3.7, 2.4, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY]) # End-effector
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
-        self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.2, -np.pi/2]) # [m, m, rad]
+        self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.2, np.pi]) # [m, m, rad]
         self.INITIAL_CHASER_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
-        self.INITIAL_ARM_ANGLES               = np.array([np.pi/2, np.pi/2, 0]) # [rad, rad, rad]
+        self.INITIAL_ARM_ANGLES               = np.array([0.0, 0.0, 0.0]) # [rad, rad, rad]
         self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
         self.INITIAL_TARGET_POSITION          = np.array([2.0, 1.0, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
-        self.RANDOMIZE_INITIAL_CONDITIONS     = False # whether or not to randomize the initial conditions
+        self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
         self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
         self.RANDOMIZATION_POSITION           = 0.5 # [m] standard deviation of position randomization
-        self.RANDOMIZATION_CHASER_VELOCITY    = 0.1 # [m/s] standard deviation of chaser velocity randomization
-        self.RANDOMIZATION_CHASER_OMEGA       = 0.05 # [rad/s] standard deviation of chaser angular velocity randomization
+        self.RANDOMIZATION_CHASER_VELOCITY    = 0.0 # [m/s] standard deviation of chaser velocity randomization
+        self.RANDOMIZATION_CHASER_OMEGA       = 0.0 # [rad/s] standard deviation of chaser angular velocity randomization
         self.RANDOMIZATION_ANGLE              = np.pi/2 # [rad] standard deviation of base angular randomization
         self.RANDOMIZATION_ARM_ANGLE          = np.pi/4 # [rad] standard deviation of arm angular randomization
-        self.RANDOMIZATION_ARM_RATES          = 0.05 # [rad/s] standard deviation of arm angular rate randomization
+        self.RANDOMIZATION_ARM_RATES          = 0.0 # [rad/s] standard deviation of arm angular rate randomization
         self.RANDOMIZATION_TARGET_VELOCITY    = 0.0 # [m/s] standard deviation of the target's velocity randomization
         self.RANDOMIZATION_TARGET_OMEGA       = 0.0 # [rad/s] standard deviation of the target's angular velocity randomization
         self.MIN_V                            = -100.
         self.MAX_V                            =  125.
         self.N_STEP_RETURN                    =   5
-        self.DISCOUNT_FACTOR                  =   0.95**(1/self.N_STEP_RETURN)
-        self.TIMESTEP                         =   0.058 # [s]
-        self.DYNAMICS_DELAY                   =   0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
-        self.AUGMENT_STATE_WITH_ACTION_LENGTH =   0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
+        self.DISCOUNT_FACTOR                  =   1#0.95**(1/self.N_STEP_RETURN)
+        self.TIMESTEP                         = 0.05 # [s]
+        self.CALIBRATE_TIMESTEP               = True # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
+        self.CLIP_DURING_CALIBRATION          = False # Whether or not to clip the control forces during calibration
+        self.PREDETERMINED_ACTION             = np.array([0.,0.,0.1,0.1,0.1,0.1])
+        self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
+        self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
         self.MAX_NUMBER_OF_TIMESTEPS          = 100 # per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
-        self.KI                               = [10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.2s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
+        self.KI                               = [10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
                                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
         self.LENGTH   = 0.3 # [m] side length
@@ -404,7 +407,12 @@ class Environment:
         self.chaser_velocity = new_chaser_state[6:9]
         self.arm_angular_rates = new_chaser_state[9:12]
         
-        # TODO: Add hard stop to the arm angles using self.ANGLE_LIMIT
+        # Setting a hard limit on the possible angles from the 
+        joints_past_limits = np.abs(self.arm_angles) > self.ANGLE_LIMIT
+        if np.any(joints_past_limits):
+            self.arm_angles[joints_past_limits] = np.sign(self.arm_angles[joints_past_limits]) * self.ANGLE_LIMIT
+            self.arm_angular_rates[joints_past_limits] = 0
+            
 
         # Step target's state ahead one timestep
         self.target_position += self.target_velocity * self.TIMESTEP
@@ -436,11 +444,13 @@ class Environment:
         ### Integral-acceleration controller ###
         ########################################
         desired_accelerations = action
-        desired_accelerations = np.array([0.1,-0.1,-0.1,-0.1,0.1,0.1])
+        if self.CALIBRATE_TIMESTEP:
+            desired_accelerations = self.PREDETERMINED_ACTION
         
         # Stopping the command of additional velocity when we are already at our maximum
         current_velocity = np.concatenate([self.chaser_velocity, self.arm_angular_rates])        
-        desired_accelerations[(np.abs(current_velocity) > self.VELOCITY_LIMIT) & (np.sign(desired_accelerations) == np.sign(current_velocity))] = 0
+        if not self.CALIBRATE_TIMESTEP:
+            desired_accelerations[(np.abs(current_velocity) > self.VELOCITY_LIMIT) & (np.sign(desired_accelerations) == np.sign(current_velocity))] = 0
         
         # Approximating the current accelerations
         current_accelerations = (current_velocity - self.previous_velocity)/self.TIMESTEP
@@ -495,21 +505,25 @@ class Environment:
         self.previous_control_effort = control_effort
 
         # Clip commands to ensure they respect the hardware limits
-        limits = np.concatenate([np.tile(self.MAX_THRUST,2), [self.MAX_BODY_TORQUE], np.tile(self.MAX_JOINT1n2_TORQUE,2), [self.MAX_JOINT3_TORQUE]])
+        limits = np.concatenate([np.tile(self.MAX_THRUST,2), [self.MAX_BODY_TORQUE], np.tile(self.MAX_JOINT1n2_TORQUE,2), [self.MAX_JOINT3_TORQUE]])        
         
-        control_effort = np.clip(control_effort, -limits, limits)
-        
-        print(control_effort)
-        
+        # If we are trying to calibrate gains and torque bounds...
+        if self.CALIBRATE_TIMESTEP:
+            print("Accelerations: ", current_accelerations, " Unclipped Control Effort: ", control_effort, end = "")
+            if self.CLIP_DURING_CALIBRATION:
+                control_effort = np.clip(control_effort, -limits, limits)
+                print(" Clipped Control Effort: ", control_effort)
+            else:
+                print(" ")
+        else:
+            control_effort = np.clip(control_effort, -limits, limits)
 
         # [F_x, F_y, torque, torque1, torque2, torque3]
         return control_effort.reshape([self.ACTION_SIZE,1])
     
     def make_jacobian(self):
         # This method calculates the jacobian for the arm
-        
-        
-        # TODO: Clean up
+
         PHI = self.PHI
         q0 = self.chaser_position[-1]
         q1 = self.arm_angles[0]
