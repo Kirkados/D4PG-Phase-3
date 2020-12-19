@@ -166,16 +166,16 @@ class Environment:
         self.MAX_V                            =  125.
         self.N_STEP_RETURN                    =   5
         self.DISCOUNT_FACTOR                  =   1#0.95**(1/self.N_STEP_RETURN)
-        self.TIMESTEP                         = 0.05 # [s]
-        self.CALIBRATE_TIMESTEP               = True # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
+        self.TIMESTEP                         = 0.2 # [s]
+        self.CALIBRATE_TIMESTEP               = False # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
         self.CLIP_DURING_CALIBRATION          = False # Whether or not to clip the control forces during calibration
-        self.PREDETERMINED_ACTION             = np.array([0.,0.,0.1,0.1,0.1,0.1])
+        self.PREDETERMINED_ACTION             = np.array([0.1,0.1,0.1,0.1,0.1,0.1])
         self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
         self.MAX_NUMBER_OF_TIMESTEPS          = 100 # per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
-        self.KI                               = [10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
+        self.KI                               = [10,10,0.15,0.012,0.003,0.000044] # Returned [10,10,0.15,0.012,0.003,0.000044] Dec 19 for 0.2s timestep #[10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
                                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
         self.LENGTH   = 0.3 # [m] side length
@@ -224,7 +224,7 @@ class Environment:
         # Some calculations that don't need to be changed
         self.TABLE_BOUNDARY    = Polygon(np.array([[0,0], [self.MAX_X_POSITION, 0], [self.MAX_X_POSITION, self.MAX_Y_POSITION], [0, self.MAX_Y_POSITION], [0,0]]))
         self.VELOCITY_LIMIT    = np.array([self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, 2*self.MAX_ANGULAR_VELOCITY, 3*self.MAX_ANGULAR_VELOCITY, 4*self.MAX_ANGULAR_VELOCITY]) # [m/s, m/s, rad/s] maximum allowable velocity/angular velocity; enforced by the controller
-        self.ANGLE_LIMIT       = np.pi/2 # Used as a hard limit in the dynamics in order to protect the arm from hitting the chaser
+        self.ANGLE_LIMIT       = 1*np.pi/2 # Used as a hard limit in the dynamics in order to protect the arm from hitting the chaser
         self.LOWER_STATE_BOUND = np.concatenate([self.LOWER_STATE_BOUND, np.tile(self.LOWER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # lower bound for each element of TOTAL_STATE
         self.UPPER_STATE_BOUND = np.concatenate([self.UPPER_STATE_BOUND, np.tile(self.UPPER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # upper bound for each element of TOTAL_STATE        
         self.OBSERVATION_SIZE  = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
@@ -410,9 +410,12 @@ class Environment:
         # Setting a hard limit on the possible angles from the 
         joints_past_limits = np.abs(self.arm_angles) > self.ANGLE_LIMIT
         if np.any(joints_past_limits):
+            # Hold the angle at the limit
             self.arm_angles[joints_past_limits] = np.sign(self.arm_angles[joints_past_limits]) * self.ANGLE_LIMIT
+            # Set the angular rate to zero
             self.arm_angular_rates[joints_past_limits] = 0
-            
+            # Set the past control effort to 0 to prevent further wind-up
+            self.previous_control_effort[3:][joints_past_limits] = 0            
 
         # Step target's state ahead one timestep
         self.target_position += self.target_velocity * self.TIMESTEP
@@ -502,7 +505,6 @@ class Environment:
         
         # Apply the integral controller 
         control_effort = self.previous_control_effort + self.KI * acceleration_error
-        self.previous_control_effort = control_effort
 
         # Clip commands to ensure they respect the hardware limits
         limits = np.concatenate([np.tile(self.MAX_THRUST,2), [self.MAX_BODY_TORQUE], np.tile(self.MAX_JOINT1n2_TORQUE,2), [self.MAX_JOINT3_TORQUE]])        
@@ -517,7 +519,10 @@ class Environment:
                 print(" ")
         else:
             control_effort = np.clip(control_effort, -limits, limits)
+            #pass
 
+        # Logging current control effort for next time step
+        self.previous_control_effort = control_effort
         # [F_x, F_y, torque, torque1, torque2, torque3]
         return control_effort.reshape([self.ACTION_SIZE,1])
     
