@@ -168,7 +168,7 @@ class Environment:
         self.DISCOUNT_FACTOR                  =   1#0.95**(1/self.N_STEP_RETURN)
         self.TIMESTEP                         = 0.2 # [s]
         self.CALIBRATE_TIMESTEP               = False # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
-        self.CLIP_DURING_CALIBRATION          = False # Whether or not to clip the control forces during calibration
+        self.CLIP_DURING_CALIBRATION          = True # Whether or not to clip the control forces during calibration
         self.PREDETERMINED_ACTION             = np.array([0.1,0.1,0.1,0.1,0.1,0.1])
         self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
@@ -224,7 +224,7 @@ class Environment:
         # Some calculations that don't need to be changed
         self.TABLE_BOUNDARY    = Polygon(np.array([[0,0], [self.MAX_X_POSITION, 0], [self.MAX_X_POSITION, self.MAX_Y_POSITION], [0, self.MAX_Y_POSITION], [0,0]]))
         self.VELOCITY_LIMIT    = np.array([self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, 2*self.MAX_ANGULAR_VELOCITY, 3*self.MAX_ANGULAR_VELOCITY, 4*self.MAX_ANGULAR_VELOCITY]) # [m/s, m/s, rad/s] maximum allowable velocity/angular velocity; enforced by the controller
-        self.ANGLE_LIMIT       = 1*np.pi/2 # Used as a hard limit in the dynamics in order to protect the arm from hitting the chaser
+        self.ANGLE_LIMIT       = 100*np.pi/2 # Used as a hard limit in the dynamics in order to protect the arm from hitting the chaser
         self.LOWER_STATE_BOUND = np.concatenate([self.LOWER_STATE_BOUND, np.tile(self.LOWER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # lower bound for each element of TOTAL_STATE
         self.UPPER_STATE_BOUND = np.concatenate([self.UPPER_STATE_BOUND, np.tile(self.UPPER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # upper bound for each element of TOTAL_STATE        
         self.OBSERVATION_SIZE  = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
