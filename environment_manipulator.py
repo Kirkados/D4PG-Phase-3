@@ -62,6 +62,7 @@ Reward system:
         - A variety of penalties to help with docking, such as:
             - penalty for end-effector angle (so it goes into the docking cone properly)
             - penalty for relative velocity during the docking (so the end-effector doesn't jab the docking cone)
+            - penalty for relatlive angular velocity of the end-effector during docking
         - A penalty for colliding with the target
         Once learned, some optional rewards can be applied to see how it affects the motion:
             - In the future, a penalty for attitude disturbance on the chaser base attitude??? Or a penalty to all accelerations??
@@ -145,14 +146,14 @@ class Environment:
                                                           3.7, 2.4, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Target
                                                           3.7, 2.4, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY]) # End-effector
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
-        self.INITIAL_CHASER_POSITION          = np.array([1.8, 2.2, -np.pi/2]) # [m, m, rad]
+        self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.5, np.pi/2]) # [m, m, rad]
         self.INITIAL_CHASER_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
         self.INITIAL_ARM_ANGLES               = np.array([0.0, 0.0, 0.0]) # [rad, rad, rad]
         self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
         self.INITIAL_TARGET_POSITION          = np.array([2.0, 1.0, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
-        self.RANDOMIZE_INITIAL_CONDITIONS     = False # whether or not to randomize the initial conditions
+        self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
         self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
         self.RANDOMIZATION_POSITION           = 0.5 # [m] standard deviation of position randomization
         self.RANDOMIZATION_CHASER_VELOCITY    = 0.0 # [m/s] standard deviation of chaser velocity randomization
@@ -167,7 +168,7 @@ class Environment:
         self.N_STEP_RETURN                    =   5
         self.DISCOUNT_FACTOR                  =   1#0.95**(1/self.N_STEP_RETURN)
         self.TIMESTEP                         = 0.2 # [s]
-        self.CALIBRATE_TIMESTEP               = True # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
+        self.CALIBRATE_TIMESTEP               = False # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
         self.CLIP_DURING_CALIBRATION          = True # Whether or not to clip the control forces during calibration
         self.PREDETERMINED_ACTION             = np.array([0.,-0.1,0.,0.,0.,0.])
         self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
