@@ -174,7 +174,7 @@ class Environment:
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
         self.MAX_NUMBER_OF_TIMESTEPS          = 100 # per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
-        self.SKIP_FAILED_ANIMATIONS           = False # Error the program or skip when animations fail?
+        self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
         self.KI                               = [10,10,0.15,0.012,0.003,0.000044] # Returned [10,10,0.15,0.012,0.003,0.000044] Dec 19 for 0.2s timestep #[10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
                                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
@@ -612,8 +612,9 @@ class Environment:
             # Applying the penalty
             reward -= np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY # 
             
-            # Penalize for relative chaser angular velocity upon docking
-            reward -= np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY
+            # Penalize for relative end-effector angular velocity upon docking
+            end_effector_angular_velocity = self.chaser_velocity[-1] + np.sum(self.arm_angular_rates)
+            reward -= np.abs(end_effector_angular_velocity - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY
             
             if self.test_time:
                 print("docking successful! Reward given: %.1f distance: %.3f; relative velocity: %.3f velocity penalty: %.1f; docking angle: %.2f angle penalty: %.1f; angular rate error: %.3f angular rate penalty %.1f" %(reward, np.linalg.norm(self.end_effector_position - self.docking_port_position), np.linalg.norm(docking_relative_velocity), np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY, docking_angle_error*180/np.pi, np.abs(np.sin(docking_angle_error/2)) * self.MAX_DOCKING_ANGLE_PENALTY,np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]),np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY))
@@ -627,15 +628,15 @@ class Environment:
         
         # Giving a penalty for colliding with the target. These booleans are updated in self.check_collisions()
         if self.chaser_target_collision:
-            print("Chaser/Target collision at time: ", self.time)
+            #print("Chaser/Target collision at time: ", self.time)
             reward -= self.TARGET_COLLISION_PENALTY
         
         if self.end_effector_collision:
-            print("End-effector/Target collision at time: ", self.time)
+            #print("End-effector/Target collision at time: ", self.time)
             reward -= self.END_EFFECTOR_COLLISION_PENALTY
         
         if self.forbidden_area_collision:
-            print("End-effector/Foridden Area collision at time: ", self.time)
+            #print("End-effector/Foridden Area collision at time: ", self.time)
             reward -= self.END_EFFECTOR_COLLISION_PENALTY
         
         # If we've fallen off the table or rotated too much, penalize this behaviour
@@ -722,8 +723,7 @@ class Environment:
         ##########################
         # Docking Polygon (circle)
         docking_circle = Point(self.target_position[:-1] + np.matmul(C_Ib_target, self.DOCKING_PORT_MOUNT_POSITION)).buffer(self.SUCCESSFUL_DOCKING_RADIUS)
-        docking_point = self.target_position[:-1] + np.matmul(C_Ib_target, self.DOCKING_PORT_MOUNT_POSITION)
-        print("End effector is: ", str(np.linalg.norm(self.end_effector_position - docking_point)), " m away from docking at time: ", str(self.time))
+        
         # Mid-way Polygon (circle)
         mid_way_circle = Point(self.target_position[:-1] + np.matmul(C_Ib_target, self.DOCKING_PORT_MOUNT_POSITION)).buffer(self.MID_WAY_REWARD_RADIUS)
         
