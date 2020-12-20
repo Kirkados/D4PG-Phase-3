@@ -15,7 +15,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'first_run' # use just the name. If trying to restore from file, use name along with timestamp
+    RUN_NAME               = 'check_reward_N1' # use just the name. If trying to restore from file, use name along with timestamp
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment
     RECORD_VIDEO           = True
@@ -32,8 +32,8 @@ class Settings:
     #############################
 
     # Hyperparameters
-    NUMBER_OF_ACTORS        = 10
-    NUMBER_OF_EPISODES      = 8e4 # that each agent will perform
+    NUMBER_OF_ACTORS        = 1
+    NUMBER_OF_EPISODES      = 1#8e4 # that each agent will perform
     MAX_TRAINING_ITERATIONS = 1e8 # of neural networks
     ACTOR_LEARNING_RATE     = 0.0001
     CRITIC_LEARNING_RATE    = 0.0001

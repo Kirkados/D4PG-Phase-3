@@ -186,9 +186,8 @@ class Agent:
                     cumulative_reward_log = []
                     done_log = []
                     discount_factor_log = []
-                    guidance_position_log = []
                     raw_total_state_log.append(total_state)
-                    
+                    cumulative_reward_log.append(0) # Starting reward log with 0 at the initial state                    
 
 
             else:
@@ -238,10 +237,12 @@ class Agent:
                 self.agent_to_env.put((action,))
 
                 # Receive results from stepped environment
-                next_total_state, reward, done, *guidance_position = self.env_to_agent.get() # The * means the variable will be unpacked only if it exists
+                next_total_state, reward, done = self.env_to_agent.get() # The * means the variable will be unpacked only if it exists
 
                 # Add reward we just received to running total for this episode
                 episode_reward += reward
+                if self.n_agent == 1 and Settings.RECORD_VIDEO and (episode_number % (Settings.CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES*Settings.VIDEO_RECORD_FREQUENCY) == 0 or episode_number == 1) and not Settings.ENVIRONMENT == 'gym':
+                    cumulative_reward_log.append(episode_reward)
                 
                 # Augment total_state with past actions, if appropriate
                 if Settings.AUGMENT_STATE_WITH_ACTION_LENGTH > 0:
@@ -285,12 +286,10 @@ class Agent:
                     if self.n_agent == 1 and Settings.RECORD_VIDEO and (episode_number % (Settings.CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES*Settings.VIDEO_RECORD_FREQUENCY) == 0 or episode_number == 1) and not Settings.ENVIRONMENT == 'gym':
                         observation_log.append(observation_0)
                         action_log.append(action_0)
-                        next_observation_log.append(next_observation)
-                        cumulative_reward_log.append(episode_reward)
+                        next_observation_log.append(next_observation)                       
                         instantaneous_reward_log.append(n_step_reward)
                         done_log.append(done)
                         discount_factor_log.append(discount_factor)
-                        guidance_position_log.append(guidance_position)
 
                 # End of timestep -> next state becomes current state
                 observation = next_observation
@@ -326,7 +325,6 @@ class Agent:
                             instantaneous_reward_log.append(n_step_reward)
                             done_log.append(done)
                             discount_factor_log.append(discount_factor)
-                            guidance_position_log.append(guidance_position)
 
             ################################
             ####### Episode Complete #######
