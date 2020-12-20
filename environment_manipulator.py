@@ -174,7 +174,7 @@ class Environment:
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
         self.MAX_NUMBER_OF_TIMESTEPS          = 100 # per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
-        self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
+        self.SKIP_FAILED_ANIMATIONS           = False # Error the program or skip when animations fail?
         self.KI                               = [10,10,0.15,0.012,0.003,0.000044] # Returned [10,10,0.15,0.012,0.003,0.000044] Dec 19 for 0.2s timestep #[10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
                                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
@@ -205,7 +205,7 @@ class Environment:
         
         # Reward function properties
         self.DOCKING_REWARD                   = 100 # A lump-sum given to the chaser when it docks
-        self.SUCCESSFUL_DOCKING_RADIUS        = 0.03 # [m] distance at which the magnetic docking can occur
+        self.SUCCESSFUL_DOCKING_RADIUS        = 0.04 # [m] distance at which the magnetic docking can occur
         self.MAX_DOCKING_ANGLE_PENALTY        = 25 # A penalty given to the chaser, upon docking, for having an angle when docking. The penalty is 0 upon perfect docking and MAX_DOCKING_ANGLE_PENALTY upon perfectly bad docking
         self.DOCKING_EE_VELOCITY_PENALTY      = 50 # A penalty given to the chaser, upon docking, for every 1 m/s end-effector collision velocity upon docking
         self.DOCKING_ANGULAR_VELOCITY_PENALTY = 25 # A penalty given to the chaser, upon docking, for every 1 rad/s angular body velocity upon docking
@@ -245,6 +245,9 @@ class Environment:
         """ NOTES:
                - if test_time = True -> do not add "controller noise" to the kinematics
         """
+        
+        # Resetting the time
+        self.time = 0.
 
         # Logging whether it is test time for this episode
         self.test_time = test_time
@@ -293,9 +296,6 @@ class Environment:
         # Initializing the previous velocity and control effort for the integral-acceleration controller
         self.previous_velocity       = np.zeros(self.ACTION_SIZE)
         self.previous_control_effort = np.zeros(self.ACTION_SIZE)
-
-        # Resetting the time
-        self.time = 0.
 
         # Resetting the action delay queue
         if self.DYNAMICS_DELAY > 0:
@@ -641,7 +641,7 @@ class Environment:
         # If we've fallen off the table or rotated too much, penalize this behaviour
         if not(self.chaser_on_table) or np.abs(self.chaser_position[-1]) > 6*np.pi:
             reward -= self.FALL_OFF_TABLE_PENALTY
-
+        
         return reward
     
     def check_collisions(self):
@@ -722,7 +722,8 @@ class Environment:
         ##########################
         # Docking Polygon (circle)
         docking_circle = Point(self.target_position[:-1] + np.matmul(C_Ib_target, self.DOCKING_PORT_MOUNT_POSITION)).buffer(self.SUCCESSFUL_DOCKING_RADIUS)
-        
+        docking_point = self.target_position[:-1] + np.matmul(C_Ib_target, self.DOCKING_PORT_MOUNT_POSITION)
+        print("End effector is: ", str(np.linalg.norm(self.end_effector_position - docking_point)), " m away from docking at time: ", str(self.time))
         # Mid-way Polygon (circle)
         mid_way_circle = Point(self.target_position[:-1] + np.matmul(C_Ib_target, self.DOCKING_PORT_MOUNT_POSITION)).buffer(self.MID_WAY_REWARD_RADIUS)
         
@@ -1377,7 +1378,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
             # Move animation to the proper directory
             os.rename(filename + '_episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
         except:
-            ("Skipping animation for episode %i due to an error" %episode_number)
+            print("Skipping animation for episode %i due to an error" %episode_number)
             # Try to delete the partially completed video file
             try:
                 os.remove(filename + '_episode_' + str(episode_number) + '.mp4')

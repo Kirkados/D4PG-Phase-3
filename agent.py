@@ -249,8 +249,7 @@ class Agent:
                     next_total_state = self.augment_state_with_actions(next_total_state)
 
                 if self.n_agent == 1 and Settings.RECORD_VIDEO and (episode_number % (Settings.CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES*Settings.VIDEO_RECORD_FREQUENCY) == 0 or episode_number == 1) and not Settings.ENVIRONMENT == 'gym':
-                    if not done:
-                        raw_total_state_log.append(next_total_state)
+                    raw_total_state_log.append(next_total_state)
 
                 # Normalize the state
                 if Settings.NORMALIZE_STATE:
