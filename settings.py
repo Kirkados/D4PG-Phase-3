@@ -33,7 +33,7 @@ class Settings:
 
     # Hyperparameters
     NUMBER_OF_ACTORS        = 10
-    NUMBER_OF_EPISODES      = 8e4 # that each agent will perform
+    NUMBER_OF_EPISODES      = 1e6 # that each agent will perform
     MAX_TRAINING_ITERATIONS = 1e8 # of neural networks
     ACTOR_LEARNING_RATE     = 0.0001
     CRITIC_LEARNING_RATE    = 0.0001
