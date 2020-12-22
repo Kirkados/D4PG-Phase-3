@@ -15,7 +15,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'newReward_uniform_text' # use just the name. If trying to restore from file, use name along with timestamp
+    RUN_NAME               = 'newReward_uniform_text_irrelevant' # use just the name. If trying to restore from file, use name along with timestamp
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment
     RECORD_VIDEO           = True
