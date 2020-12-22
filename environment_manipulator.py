@@ -168,15 +168,15 @@ class Environment:
         self.N_STEP_RETURN                    =   5
         self.DISCOUNT_FACTOR                  =   1#0.95**(1/self.N_STEP_RETURN)
         self.TIMESTEP                         = 0.2 # [s]
-        self.CALIBRATE_TIMESTEP               = True # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
+        self.CALIBRATE_TIMESTEP               = False # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
         self.CLIP_DURING_CALIBRATION          = True # Whether or not to clip the control forces during calibration
-        self.PREDETERMINED_ACTION             = np.array([0.,-0.,0.,0.1,0.,0.])
+        self.PREDETERMINED_ACTION             = np.array([0,0,0,0,0,0])
         self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
         self.MAX_NUMBER_OF_TIMESTEPS          = 100 # per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
-        self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
-        self.KI                               = [10,10,0.,0.012,0.003,0.000044] # Returned [10,10,0.15,0.012,0.003,0.000044] Dec 19 for 0.2s timestep #[10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
+        self.SKIP_FAILED_ANIMATIONS           = False # Error the program or skip when animations fail?
+        self.KI                               = [10,10,0.15,0.012,0.003,0.000044] # Returned [10,10,0.15,0.012,0.003,0.000044] Dec 19 for 0.2s timestep #[10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
                                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
         self.LENGTH   = 0.3 # [m] side length
@@ -1230,6 +1230,16 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     target_body_inertial       = np.matmul(C_Ib_target, target_points_body)     + np.array([target_x, target_y]).T.reshape([-1,2,1])
     target_front_face_inertial = np.matmul(C_Ib_target, target_front_face_body) + np.array([target_x, target_y]).T.reshape([-1,2,1])
 
+    
+    # Calculating the accelerations for each state through time
+    velocities = np.concatenate([states[:,3:6],states[:,9:12]], axis = 1)
+    # Numerically differentiating to approximate the derivative
+    accelerations = np.diff(velocities, axis = 0)/temp_env.TIMESTEP
+    # Add a row of zeros initially to the current acceleartions
+    accelerations = np.concatenate([np.zeros([1,temp_env.ACTION_SIZE]), accelerations])
+    
+    # Adding a row of zeros to the actions for the first timestep
+    actions = np.concatenate([np.zeros([1,temp_env.ACTION_SIZE]), actions])
 
     #######################
     ### Plotting Motion ###
@@ -1306,6 +1316,12 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
         reward_text  = subfig1.text(x = 0.62, y = 0.96, s = '', fontsize = 8, transform=subfig1.transAxes)
         episode_text = subfig1.text(x = 0.40, y = 1.02, s = '', fontsize = 8, transform=subfig1.transAxes)
         episode_text.set_text('Episode ' + str(episode_number))
+        control1_text = subfig1.text(x = 0.01, y = 0.90, s = '', fontsize = 6, transform=subfig1.transAxes)
+        control2_text = subfig1.text(x = 0.01, y = 0.85, s = '', fontsize = 6, transform=subfig1.transAxes)
+        control3_text = subfig1.text(x = 0.01, y = 0.80, s = '', fontsize = 6, transform=subfig1.transAxes)
+        control4_text = subfig1.text(x = 0.01, y = 0.75, s = '', fontsize = 6, transform=subfig1.transAxes)
+        control5_text = subfig1.text(x = 0.01, y = 0.70, s = '', fontsize = 6, transform=subfig1.transAxes)
+        control6_text = subfig1.text(x = 0.01, y = 0.65, s = '', fontsize = 6, transform=subfig1.transAxes)
 
     # Function called repeatedly to draw each frame
     def render_one_frame(frame, *fargs):
@@ -1330,6 +1346,14 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
 
         # Update the time text
         time_text.set_text('Time = %.1f s' %(frame*temp_env.TIMESTEP))
+        
+        # Update the control text
+        control1_text.set_text('$\ddot{x}$ = %6.3f; true = %6.3f' %(actions[frame,0], accelerations[frame,0]))
+        control2_text.set_text('$\ddot{y}$ = %6.3f; true = %6.3f' %(actions[frame,1], accelerations[frame,1]))
+        control3_text.set_text(r'$\ddot{\theta}$ = %1.3f; true = %6.3f' %(actions[frame,2], accelerations[frame,2]))
+        control4_text.set_text('$\ddot{q_0}$ = %6.3f; true = %6.3f' %(actions[frame,3], accelerations[frame,3]))
+        control5_text.set_text('$\ddot{q_1}$ = %6.3f; true = %6.3f' %(actions[frame,4], accelerations[frame,4]))
+        control6_text.set_text('$\ddot{q_2}$ = %6.3f; true = %6.3f' %(actions[frame,5], accelerations[frame,5]))
 
         # Update the reward text
         reward_text.set_text('Total reward = %.1f' %cumulative_reward_log[frame])
