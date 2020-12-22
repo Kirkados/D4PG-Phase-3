@@ -146,23 +146,23 @@ class Environment:
                                                           3.7, 2.4, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Target
                                                           3.7, 2.4, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY]) # End-effector
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
-        self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.5, np.pi/2]) # [m, m, rad]
-        self.INITIAL_CHASER_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
-        self.INITIAL_ARM_ANGLES               = np.array([0.0, 0.0, 0.0]) # [rad, rad, rad]
-        self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
-        self.INITIAL_TARGET_POSITION          = np.array([2.0, 1.0, 0.0]) # [m, m, rad]
-        self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
+        self.INITIAL_CHASER_POSITION          = np.array([1.23, 1.2, 0.0]) # [m, m, rad]
+        self.INITIAL_CHASER_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
+        self.INITIAL_ARM_ANGLES               = np.array([0.0,  0.0, 0.0]) # [rad, rad, rad]
+        self.INITIAL_ARM_RATES                = np.array([0.0,  0.0, 0.0]) # [rad/s, rad/s, rad/s]
+        self.INITIAL_TARGET_POSITION          = np.array([2.46, 1.2, 0.0]) # [m, m, rad]
+        self.INITIAL_TARGET_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
         self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
         self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
-        self.RANDOMIZATION_POSITION           = 0.5 # [m] standard deviation of position randomization
-        self.RANDOMIZATION_CHASER_VELOCITY    = 0.0 # [m/s] standard deviation of chaser velocity randomization
-        self.RANDOMIZATION_CHASER_OMEGA       = 0.0 # [rad/s] standard deviation of chaser angular velocity randomization
-        self.RANDOMIZATION_ANGLE              = np.pi/2 # [rad] standard deviation of base angular randomization
-        self.RANDOMIZATION_ARM_ANGLE          = np.pi/4 # [rad] standard deviation of arm angular randomization
-        self.RANDOMIZATION_ARM_RATES          = 0.0 # [rad/s] standard deviation of arm angular rate randomization
-        self.RANDOMIZATION_TARGET_VELOCITY    = 0.0 # [m/s] standard deviation of the target's velocity randomization
-        self.RANDOMIZATION_TARGET_OMEGA       = 0.0 # [rad/s] standard deviation of the target's angular velocity randomization
+        self.RANDOMIZATION_POSITION           = 0.5 # [m] half-range uniform randomization position
+        self.RANDOMIZATION_CHASER_VELOCITY    = 0.0 # [m/s] half-range uniform randomization chaser velocity
+        self.RANDOMIZATION_CHASER_OMEGA       = 0.0 # [rad/s] half-range uniform randomization chaser omega
+        self.RANDOMIZATION_ANGLE              = np.pi # [rad] half-range uniform randomization chaser and target base angle
+        self.RANDOMIZATION_ARM_ANGLE          = np.pi/2 # [rad] half-range uniform randomization arm angle
+        self.RANDOMIZATION_ARM_RATES          = 0.0 # [rad/s] half-range uniform randomization arm rates
+        self.RANDOMIZATION_TARGET_VELOCITY    = 0.0 # [m/s] half-range uniform randomization target velocity
+        self.RANDOMIZATION_TARGET_OMEGA       = 0.0 # [rad/s] half-range uniform randomization target omega
         self.MIN_V                            = -100.
         self.MAX_V                            =  125.
         self.N_STEP_RETURN                    =   5
@@ -259,17 +259,17 @@ class Environment:
         # If we are randomizing the initial conditions and state
         if self.RANDOMIZE_INITIAL_CONDITIONS:
             # Randomizing initial state in Inertial frame
-            self.chaser_position = self.INITIAL_CHASER_POSITION + np.random.randn(3)*[self.RANDOMIZATION_POSITION, self.RANDOMIZATION_POSITION, self.RANDOMIZATION_ANGLE]
+            self.chaser_position = self.INITIAL_CHASER_POSITION + np.random.uniform(low = -1, high = 1, size = 3)*[self.RANDOMIZATION_POSITION, self.RANDOMIZATION_POSITION, self.RANDOMIZATION_ANGLE]
             # Randomizing initial claser velocity in Inertial Frame
-            self.chaser_velocity = self.INITIAL_CHASER_VELOCITY + np.random.randn(3)*[self.RANDOMIZATION_CHASER_VELOCITY, self.RANDOMIZATION_CHASER_VELOCITY, self.RANDOMIZATION_CHASER_OMEGA]
+            self.chaser_velocity = self.INITIAL_CHASER_VELOCITY + np.random.uniform(low = -1, high = 1, size = 3)*[self.RANDOMIZATION_CHASER_VELOCITY, self.RANDOMIZATION_CHASER_VELOCITY, self.RANDOMIZATION_CHASER_OMEGA]
             # Randomizing target state in Inertial frame
-            self.target_position = self.INITIAL_TARGET_POSITION + np.random.randn(3)*[self.RANDOMIZATION_POSITION, self.RANDOMIZATION_POSITION, self.RANDOMIZATION_ANGLE]
+            self.target_position = self.INITIAL_TARGET_POSITION + np.random.uniform(low = -1, high = 1, size = 3)*[self.RANDOMIZATION_POSITION, self.RANDOMIZATION_POSITION, self.RANDOMIZATION_ANGLE]
             # Randomizing target velocity in Inertial frame
-            self.target_velocity = self.INITIAL_TARGET_VELOCITY + np.random.randn(3)*[self.RANDOMIZATION_TARGET_VELOCITY, self.RANDOMIZATION_TARGET_VELOCITY, self.RANDOMIZATION_TARGET_OMEGA]
+            self.target_velocity = self.INITIAL_TARGET_VELOCITY + np.random.uniform(low = -1, high = 1, size = 3)*[self.RANDOMIZATION_TARGET_VELOCITY, self.RANDOMIZATION_TARGET_VELOCITY, self.RANDOMIZATION_TARGET_OMEGA]
             # Randomizing arm angles in Body frame
-            self.arm_angles = self.INITIAL_ARM_ANGLES + np.random.randn(3)*[self.RANDOMIZATION_ARM_ANGLE, self.RANDOMIZATION_ARM_ANGLE, self.RANDOMIZATION_ARM_ANGLE]
+            self.arm_angles = self.INITIAL_ARM_ANGLES + np.random.uniform(low = -1, high = 1, size = 3)*[self.RANDOMIZATION_ARM_ANGLE, self.RANDOMIZATION_ARM_ANGLE, self.RANDOMIZATION_ARM_ANGLE]
             # Randomizing arm angular rates in body frame
-            self.arm_angular_rates = self.INITIAL_ARM_RATES + np.random.randn(3)*[self.RANDOMIZATION_ARM_RATES, self.RANDOMIZATION_ARM_RATES, self.RANDOMIZATION_ARM_RATES]
+            self.arm_angular_rates = self.INITIAL_ARM_RATES + np.random.uniform(low = -1, high = 1, size = 3)*[self.RANDOMIZATION_ARM_RATES, self.RANDOMIZATION_ARM_RATES, self.RANDOMIZATION_ARM_RATES]
             
 
         else:
