@@ -173,7 +173,7 @@ class Environment:
         self.PREDETERMINED_ACTION             = np.array([0,0,0,0,0,0])
         self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
-        self.MAX_NUMBER_OF_TIMESTEPS          = 100 # per episode
+        self.MAX_NUMBER_OF_TIMESTEPS          = 150# per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
         self.KI                               = [10,10,0.15,0.012,0.003,0.000044] # Returned [10,10,0.15,0.012,0.003,0.000044] Dec 19 for 0.2s timestep #[10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)

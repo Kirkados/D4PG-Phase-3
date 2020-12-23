@@ -144,6 +144,7 @@ class Learner:
     def run(self, stop_run_flag, replay_buffer_dump_flag, starting_training_iteration):
         # Continuously train the actor and the critic, by applying stochastic gradient
         # descent to batches of data sampled from the replay buffer
+        print("Starting to run learner at iteration %i" %starting_training_iteration)
 
         # Initializing the counter of training iterations
         self.total_training_iterations = starting_training_iteration

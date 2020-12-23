@@ -87,16 +87,17 @@ random.seed(Settings.RANDOM_SEED)
 ############################################################
 # If we're continuing a run
 if Settings.RESUME_TRAINING:
-    filename                  = Settings.RUN_NAME # Reuse the name too
+    filename                  = '' # Reuse the name too
     starting_episode_number   = np.zeros(Settings.NUMBER_OF_ACTORS, dtype = np.int32) # initializing
     starting_iteration_number = 0 # initializing
-    print("\nReading tensorboard file to see where to start...\n")
+    print("\nTrying to resume training")
+    print("\nReading tensorboard file to see where to start...", end = "")
     try:
         # Grab the tensorboard path
-        old_tensorboard_filename = [i for i in os.listdir(Settings.MODEL_SAVE_DIRECTORY + filename) if i.endswith(Settings.TENSORBOARD_FILE_EXTENSION)][0]
+        old_tensorboard_filename = [i for i in os.listdir('..') if i.endswith(Settings.TENSORBOARD_FILE_EXTENSION)][-1]
 
         # For every entry in the tensorboard file
-        for tensorboard_entry in tf.train.summary_iterator(Settings.MODEL_SAVE_DIRECTORY + filename + "/" + old_tensorboard_filename):
+        for tensorboard_entry in tf.train.summary_iterator("../" + old_tensorboard_filename):
             # Search each one for the Loss value so you can find the final iteration number
             for tensorboard_value in tensorboard_entry.summary.value:
                 if tensorboard_value.tag == 'Logging_Learning/Loss':
@@ -107,10 +108,10 @@ if Settings.RESUME_TRAINING:
                 for tensorboard_value in tensorboard_entry.summary.value:
                     if tensorboard_value.tag == 'Agent_' + str(agent_number + 1) + '/Number_of_timesteps':
                         starting_episode_number[agent_number] = max(tensorboard_entry.step, starting_episode_number[agent_number])
-        print("\nStarting learner at iteration %i\n" %starting_iteration_number)
+        print("Done!\n")
     except:
         # If the load failed... quit run
-        print("Couldn't load in old tensorboard file! Quitting run.")
+        print("\n\nError! Couldn't load in old tensorboard file! Quitting run.\nIf this is a new run, turn off RESUME_TRAINING")
         raise SystemExit
 
 else: # Otherwise, we are starting from scratch
@@ -123,16 +124,20 @@ else: # Otherwise, we are starting from scratch
 writer = tf.summary.FileWriter(Settings.MODEL_SAVE_DIRECTORY + filename, filename_suffix = Settings.TENSORBOARD_FILE_EXTENSION)
 
 # Saving a copy of the all python files used in this run, for reference
-# Make directory if it doesn't already exist
-os.makedirs(os.path.dirname(Settings.MODEL_SAVE_DIRECTORY + filename + '/code/'), exist_ok=True)
-for each_file in glob.glob('*.py'):
-    shutil.copy2(each_file, Settings.MODEL_SAVE_DIRECTORY + filename + '/code/')
+# Make directory if it doesn't already exist. Only do so if we aren't resuming training
+if not Settings.RESUME_TRAINING:        
+    os.makedirs(os.path.dirname(Settings.MODEL_SAVE_DIRECTORY + filename + '/code/'), exist_ok=True)
+    for each_file in glob.glob('*.py'):
+        shutil.copy2(each_file, Settings.MODEL_SAVE_DIRECTORY + filename + '/code/')
 
 #######################################
 ##### Starting Tensorflow session #####
 #######################################
 with tf.Session(config = config) as sess:
-    print("\nThis run is named " + filename)
+    if Settings.RESUME_TRAINING:
+        print("\nThis run is continuing: " + os.path.basename(os.path.normpath(os.getcwd() + '/..')))
+    else:
+        print("\nThis run is named " + filename)
     print("\nThe environment file is: environment_" + Settings.ENVIRONMENT + '\n')
 
     print("Full dynamics are ALWAYS being used\n")
