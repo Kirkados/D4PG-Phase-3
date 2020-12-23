@@ -88,7 +88,7 @@ random.seed(Settings.RANDOM_SEED)
 # If we're continuing a run
 if Settings.RESUME_TRAINING:
     filename                  = Settings.RUN_NAME # Reuse the name too
-    starting_episode_number   = np.zeros(Settings.NUMBER_OF_ACTORS, dtype = np.int8) # initializing
+    starting_episode_number   = np.zeros(Settings.NUMBER_OF_ACTORS, dtype = np.int32) # initializing
     starting_iteration_number = 0 # initializing
 
     try:
