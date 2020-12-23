@@ -33,11 +33,11 @@ class Saver:
         self.saver = tf.train.Saver(max_to_keep = Settings.NUM_CHECKPOINT_MODELS_TO_SAVE) # initialize the tensorflow Saver()
 
         if Settings.RESUME_TRAINING:
-            print("Attempting to load in the most recent previously-trained model")
+            print("\nAttempting to load in the most recent previously-trained model")
             try:
                 ckpt = tf.train.get_checkpoint_state(Settings.MODEL_SAVE_DIRECTORY)
                 self.saver.restore(self.sess, ckpt.model_checkpoint_path)
-                print("Model successfully loaded!")
+                print("Model successfully loaded!\n")
                 return True
 
             except (ValueError, AttributeError):

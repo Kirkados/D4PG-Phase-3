@@ -9,6 +9,7 @@ this heap of data continually and in its own thread.
 """
 
 import random
+import pickle
 import numpy as np
 
 from collections import deque
@@ -18,9 +19,22 @@ from settings import Settings
 class ReplayBuffer():
     # Generates and manages a non-prioritized replay buffer
     
-    def __init__(self):
+    def __init__(self, filename):
+        
+        # Save filename
+        self.filename = filename
+               
         # Generate the buffer
         self.buffer = deque(maxlen = Settings.REPLAY_BUFFER_SIZE)
+        
+        # Try to load in the filled buffer
+        if Settings.RESUME_TRAINING:
+            try:
+                print("Loading in the saved replay buffer samples...", end = "")
+                self.load()
+                print("Success!")
+            except:
+                print("\n\nCouldn't load in pickle! Starting an empty buffer")
 
     # Query how many entries are in the buffer
     def how_filled(self):
@@ -47,4 +61,14 @@ class ReplayBuffer():
         gammas_batch           = np.reshape(sampled_batch[:, 5], [-1, 1])
 
         return states_batch, actions_batch, rewards_batch, next_states_batch, dones_batch, gammas_batch
-        
+    
+    def save(self):
+        print("Saving replay buffer with %i samples" %self.how_filled())
+        # Saves the replay buffer to file for a backup
+        with open(Settings.MODEL_SAVE_DIRECTORY + self.filename + '/replay_buffer_dump', 'wb') as pickle_file:
+            pickle.dump(self.buffer, pickle_file)
+    
+    def load(self):
+        # Loads the replay buffer from file to continue training
+        with open(Settings.MODEL_SAVE_DIRECTORY + self.filename + '/replay_buffer_dump', 'rb') as pickle_file:
+            self.buffer = pickle.load(pickle_file)

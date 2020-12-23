@@ -311,6 +311,8 @@ class Learner:
             if (self.total_training_iterations % Settings.SAVE_CHECKPOINT_EVERY_NUM_ITERATIONS == 0) or (self.total_training_iterations == Settings.MAX_TRAINING_ITERATIONS) or stop_run_flag.is_set():
                 # Save the state of all networks and note the training iteration
                 self.saver.save(self.total_training_iterations, self.state_placeholder, self.actor.action_scaled)
+                # Also save the replay buffer
+                self.replay_buffer.save()
 
             # If it's time to print the training performance to the screen
             if self.total_training_iterations % Settings.DISPLAY_TRAINING_PERFORMANCE_EVERY_NUM_ITERATIONS == 0:

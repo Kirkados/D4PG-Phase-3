@@ -175,9 +175,10 @@ with tf.Session(config = config) as sess:
 
     # Initializing replay buffer, with the option of a prioritized replay buffer
     if Settings.PRIORITY_REPLAY_BUFFER:
+        # Loading is not implemented for prioritized replay buffer
         replay_buffer = PrioritizedReplayBuffer()
     else:
-        replay_buffer = ReplayBuffer()
+        replay_buffer = ReplayBuffer(filename)
 
     # Initializing thread & process list
     threads = []
@@ -303,7 +304,7 @@ with tf.Session(config = config) as sess:
                 break
             
     except KeyboardInterrupt: # if someone pressed Ctrl + C
-        print("Interrupted by user!")
+        print("\nInterrupted by user!")
         print("Stopping all the threads!!")
         # Gracefully stop all threads, ending episodes and saving data
         stop_run_flag.set()
