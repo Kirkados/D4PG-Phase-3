@@ -90,7 +90,7 @@ if Settings.RESUME_TRAINING:
     filename                  = Settings.RUN_NAME # Reuse the name too
     starting_episode_number   = np.zeros(Settings.NUMBER_OF_ACTORS, dtype = np.int32) # initializing
     starting_iteration_number = 0 # initializing
-
+    print("\nReading tensorboard file to see where to start...\n")
     try:
         # Grab the tensorboard path
         old_tensorboard_filename = [i for i in os.listdir(Settings.MODEL_SAVE_DIRECTORY + filename) if i.endswith(Settings.TENSORBOARD_FILE_EXTENSION)][0]
@@ -107,7 +107,7 @@ if Settings.RESUME_TRAINING:
                 for tensorboard_value in tensorboard_entry.summary.value:
                     if tensorboard_value.tag == 'Agent_' + str(agent_number + 1) + '/Number_of_timesteps':
                         starting_episode_number[agent_number] = max(tensorboard_entry.step, starting_episode_number[agent_number])
-
+        print("\nStarting learner at iteration %i\n" %starting_iteration_number)
     except:
         # If the load failed... quit run
         print("Couldn't load in old tensorboard file! Quitting run.")
