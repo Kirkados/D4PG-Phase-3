@@ -121,7 +121,7 @@ class Environment:
         self.IRRELEVANT_STATES                = [18,19,20,21] # [end-effector states] indices of states who are irrelevant to the policy network
         self.OBSERVATION_SIZE                 = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
         self.ACTION_SIZE                      = 6 # [x_dot_dot, y_dot_dot, theta_dot_dot, shoulder_theta_dot_dot, elbow_theta_dot_dot, wrist_theta_dot_dot] in the inertial frame (for x and y), in the joint frame for the others.
-        self.MAX_X_POSITION                   = 3.7 # [m]
+        self.MAX_X_POSITION                   = 3.5 # [m]
         self.MAX_Y_POSITION                   = 2.4 # [m]
         self.MAX_VELOCITY                     = 0.5 # [m/s]
         self.MAX_ANGULAR_VELOCITY             = np.pi/6 # [rad/s] for joints or body
@@ -1302,7 +1302,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
         subfig6.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.])
 
     else:
-        subfig1 = figure.add_subplot(1, 1, 1, aspect = 'equal', autoscale_on = False, xlim = (0, 3.7), ylim = (0, 2.4), xlabel = 'X Position (m)', ylabel = 'Y Position (m)')
+        subfig1 = figure.add_subplot(1, 1, 1, aspect = 'equal', autoscale_on = False, xlim = (0, temp_env.MAX_X_POSITION), ylim = (0, temp_env.MAX_Y_POSITION), xlabel = 'X Position (m)', ylabel = 'Y Position (m)')
 
     # Defining plotting objects that change each frame
     chaser_body,       = subfig1.plot([], [], color = 'r', linestyle = '-', linewidth = 2) # Note, the comma is needed
