@@ -166,7 +166,7 @@ class Environment:
         self.MIN_V                            = -100.
         self.MAX_V                            =  125.
         self.N_STEP_RETURN                    =   5
-        self.DISCOUNT_FACTOR                  =   1#0.95**(1/self.N_STEP_RETURN)
+        self.DISCOUNT_FACTOR                  = 0.95**(1/self.N_STEP_RETURN)
         self.TIMESTEP                         = 0.2 # [s]
         self.CALIBRATE_TIMESTEP               = False # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
         self.CLIP_DURING_CALIBRATION          = True # Whether or not to clip the control forces during calibration
