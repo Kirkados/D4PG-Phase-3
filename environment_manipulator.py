@@ -297,6 +297,9 @@ class Environment:
         # Initializing the previous velocity and control effort for the integral-acceleration controller
         self.previous_velocity       = np.zeros(self.ACTION_SIZE)
         self.previous_control_effort = np.zeros(self.ACTION_SIZE)
+        
+        # Initializing integral anti-wind-up that checks if the joints angles have been reached
+        self.joints_past_limits = [False, False, False]
 
         # Resetting the action delay queue
         if self.DYNAMICS_DELAY > 0:
@@ -409,16 +412,17 @@ class Environment:
         self.arm_angular_rates = new_chaser_state[9:12]
         
         # Setting a hard limit on the manipulator angles
-        #TODO: Investigate momentum transfer when limits are hit. It seems like it has to do 
+        #TODO: Investigate momentum transfer when limits are hit. It seems like I have to do 
         #      this either through conservation of momentum or a collision force?
-        joints_past_limits = np.abs(self.arm_angles) > self.ANGLE_LIMIT
-        if np.any(joints_past_limits):
+        self.joints_past_limits = np.abs(self.arm_angles) > self.ANGLE_LIMIT
+        if np.any(self.joints_past_limits):
             # Hold the angle at the limit
-            self.arm_angles[joints_past_limits] = np.sign(self.arm_angles[joints_past_limits]) * self.ANGLE_LIMIT
+            self.arm_angles[self.joints_past_limits] = np.sign(self.arm_angles[self.joints_past_limits]) * self.ANGLE_LIMIT
             # Set the angular rate to zero
-            self.arm_angular_rates[joints_past_limits] = 0
+            self.arm_angular_rates[self.joints_past_limits] = 0
             # Set the past control effort to 0 to prevent further wind-up
-            self.previous_control_effort[3:][joints_past_limits] = 0            
+            # Removed because wind-up was totally removed. Instead, stop it from increasing in the controller 
+            #self.previous_control_effort[3:][self.joints_past_limits] = 0            
 
         # Step target's state ahead one timestep
         self.target_position += self.target_velocity * self.TIMESTEP
@@ -506,6 +510,10 @@ class Environment:
         # Calculate the acceleration error
         acceleration_error = desired_accelerations - current_accelerations
         
+        # If the joint is currently at its limit and the desired acceleration is worsening the problem, set the acceleration error to 0. This will prevent further integral wind-up but not release the current wind-up.
+        acceleration_errors_to_zero = (self.joints_past_limits) & (np.sign(desired_accelerations[3:]) == np.sign(self.arm_angles))
+        acceleration_error[3:][acceleration_errors_to_zero] = 0
+                
         # Apply the integral controller 
         control_effort = self.previous_control_effort + self.KI * acceleration_error
 
