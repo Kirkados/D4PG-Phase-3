@@ -597,7 +597,7 @@ class Environment:
             reward += self.DOCKING_REWARD
             
             # Penalize for end-effector angle
-            end_effector_angle_inertial = self.chaser_position[-1] + np.sum(self.arm_angles)
+            end_effector_angle_inertial = self.chaser_position[-1] + np.sum(self.arm_angles) + np.pi/2
             
             # Docking cone angle in the target body frame
             docking_cone_angle_body = np.arctan2(self.DOCKING_PORT_CORNER1_POSITION[1] - self.DOCKING_PORT_CORNER2_POSITION[1], self.DOCKING_PORT_CORNER1_POSITION[0] - self.DOCKING_PORT_CORNER2_POSITION[0])
