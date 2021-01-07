@@ -69,7 +69,7 @@ class ReplayBuffer():
             try:
                 pickle.dump(self.buffer, pickle_file)
             except:
-                print("Save failed.")
+                print("Save failed since the buffer was written to during the save.")
     
     def load(self):
         # Loads the replay buffer from file to continue training
