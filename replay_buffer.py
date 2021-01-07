@@ -66,7 +66,10 @@ class ReplayBuffer():
         print("Saving replay buffer with %i samples" %self.how_filled())
         # Saves the replay buffer to file for a backup
         with open(Settings.MODEL_SAVE_DIRECTORY + self.filename + '/replay_buffer_dump', 'wb') as pickle_file:
-            pickle.dump(self.buffer, pickle_file)
+            try:
+                pickle.dump(self.buffer, pickle_file)
+            except:
+                print("Save failed.")
     
     def load(self):
         # Loads the replay buffer from file to continue training
