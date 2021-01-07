@@ -180,9 +180,9 @@ class Environment:
                                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
         self.LENGTH   = 0.3 # [m] side length
-        self.PHI      = np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
-        self.B0       = (self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
-        self.MASS     = 10.0  # [kg] for chaser
+        self.PHI      = 68.2840*np.pi/180#np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
+        self.B0       = 0.2304#(self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
+        self.MASS     = 16.9478#10.0  # [kg] for chaser
         self.M1       = 0.3377 # [kg] link mass
         self.M2       = 0.3281 # [kg] link mass
         self.M3       = 0.0111 # [kg] link mass
