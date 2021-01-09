@@ -94,7 +94,7 @@ if Settings.RESUME_TRAINING:
     print("\nReading tensorboard file to see where to start...", end = "")
     try:
         # Grab the tensorboard path
-        old_tensorboard_filename = [i for i in os.listdir('..') if i.endswith(Settings.TENSORBOARD_FILE_EXTENSION)][-1]
+        old_tensorboard_filename = [i for i in sorted(os.listdir('..')) if i.endswith(Settings.TENSORBOARD_FILE_EXTENSION)][-1]
 
         # For every entry in the tensorboard file
         for tensorboard_entry in tf.train.summary_iterator("../" + old_tensorboard_filename):
