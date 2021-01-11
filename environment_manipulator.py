@@ -346,6 +346,13 @@ class Environment:
         # End effector velocity
         self.end_effector_velocity = np.array([x_ee_dot, y_ee_dot]) 
         
+        ###################
+        ## Elbow Section ##
+        ###################
+        x_elbow = x + self.B0*np.cos(self.PHI + theta) + (self.A1 + self.B1)*np.cos(np.pi/2 + theta + theta_1)                  
+        y_elbow = y + self.B0*np.sin(self.PHI + theta) + (self.A1 + self.B1)*np.sin(np.pi/2 + theta + theta_1)
+                  
+        self.elbow_position = np.array([x_elbow, y_elbow])        
         
         ##########################
         ## Docking port Section ##
@@ -639,15 +646,15 @@ class Environment:
         
         # Giving a penalty for colliding with the target. These booleans are updated in self.check_collisions()
         if self.chaser_target_collision:
-            #print("Chaser/Target collision at time: ", self.time)
             reward -= self.TARGET_COLLISION_PENALTY
         
         if self.end_effector_collision:
-            #print("End-effector/Target collision at time: ", self.time)
             reward -= self.END_EFFECTOR_COLLISION_PENALTY
         
         if self.forbidden_area_collision:
-            #print("End-effector/Foridden Area collision at time: ", self.time)
+            reward -= self.END_EFFECTOR_COLLISION_PENALTY
+            
+        if self.elbow_target_collision:
             reward -= self.END_EFFECTOR_COLLISION_PENALTY
         
         # If we've fallen off the table or rotated too much, penalize this behaviour
@@ -661,7 +668,7 @@ class Environment:
             It also checks if the chaser has fallen off the table, if the end-effector has docked,
             and if it has reached the mid-way mark
         
-            Returns 7 booleans: end_effector_collision, forbidden_area_collision, chaser_target_collision, chaser_on_table, mid_way, and docked
+            Returns 7 booleans: end_effector_collision, forbidden_area_collision, chaser_target_collision, chaser_on_table, mid_way, docked, and elbow_target_collision
         """
         
         ##################################################
@@ -704,6 +711,8 @@ class Environment:
         chaser_body_inertial = np.matmul(C_Ib_chaser, chaser_points_body) + np.array([self.chaser_position[0], self.chaser_position[1]]).reshape([2,-1])
         chaser_polygon = Polygon(chaser_body_inertial.T)
         
+        # Elbow position in the inertial frame
+        elbow_point = Point(self.elbow_position)
         
         ###########################
         ### Checking collisions ###
@@ -713,6 +722,7 @@ class Environment:
         self.chaser_target_collision = False
         self.mid_way = False
         self.docked = False
+        self.elbow_target_collision = False
         
         if self.CHECK_END_EFFECTOR_COLLISION and end_effector_point.within(target_polygon):
             if self.test_time:
@@ -728,6 +738,11 @@ class Environment:
             if self.test_time:
                 print("Chaser/target collision")
             self.chaser_target_collision = True
+        
+        if self.CHECK_END_EFFECTOR_COLLISION and elbow_point.within(target_polygon):
+            if self.test_time:
+                print("Elbow/target collision!")
+            self.elbow_target_collision = True
         
         ##########################
         ### Mid-way or docked? ###
