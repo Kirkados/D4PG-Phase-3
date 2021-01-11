@@ -162,7 +162,7 @@ class Environment:
         self.RANDOMIZATION_ARM_ANGLE          = np.pi/2 # [rad] half-range uniform randomization arm angle
         self.RANDOMIZATION_ARM_RATES          = 0.0 # [rad/s] half-range uniform randomization arm rates
         self.RANDOMIZATION_TARGET_VELOCITY    = 0.0 # [m/s] half-range uniform randomization target velocity
-        self.RANDOMIZATION_TARGET_OMEGA       = 0.0 # [rad/s] half-range uniform randomization target omega
+        self.RANDOMIZATION_TARGET_OMEGA       = 2*np.pi/30 # [rad/s] half-range uniform randomization target omega
         self.MIN_V                            = -100.
         self.MAX_V                            =  125.
         self.N_STEP_RETURN                    =   5
@@ -207,16 +207,16 @@ class Environment:
         # Reward function properties
         self.DOCKING_REWARD                   = 100 # A lump-sum given to the chaser when it docks
         self.SUCCESSFUL_DOCKING_RADIUS        = 0.04 # [m] distance at which the magnetic docking can occur
-        self.MAX_DOCKING_ANGLE_PENALTY        = 25 # A penalty given to the chaser, upon docking, for having an angle when docking. The penalty is 0 upon perfect docking and MAX_DOCKING_ANGLE_PENALTY upon perfectly bad docking
+        self.MAX_DOCKING_ANGLE_PENALTY        = 50 # A penalty given to the chaser, upon docking, for having an angle when docking. The penalty is 0 upon perfect docking and MAX_DOCKING_ANGLE_PENALTY upon perfectly bad docking
         self.DOCKING_EE_VELOCITY_PENALTY      = 50 # A penalty given to the chaser, upon docking, for every 1 m/s end-effector collision velocity upon docking
         self.DOCKING_ANGULAR_VELOCITY_PENALTY = 25 # A penalty given to the chaser, upon docking, for every 1 rad/s angular body velocity upon docking
         self.END_ON_FALL                      = True # end episode on a fall off the table        
         self.FALL_OFF_TABLE_PENALTY           = 100.
         self.CHECK_CHASER_TARGET_COLLISION    = True
-        self.TARGET_COLLISION_PENALTY         = 2 # [rewards/timestep] penalty given for colliding with target  
+        self.TARGET_COLLISION_PENALTY         = 5 # [rewards/timestep] penalty given for colliding with target  
         self.CHECK_END_EFFECTOR_COLLISION     = True # Whether to do collision detection on the end-effector
         self.CHECK_END_EFFECTOR_FORBIDDEN     = True # Whether to expand the collision area to include the forbidden zone
-        self.END_EFFECTOR_COLLISION_PENALTY   = 2 # [rewards/timestep] Penalty for end-effector collisions (with target or optionally with the forbidden zone)
+        self.END_EFFECTOR_COLLISION_PENALTY   = 5 # [rewards/timestep] Penalty for end-effector collisions (with target or optionally with the forbidden zone)
         self.GIVE_MID_WAY_REWARD              = True # Whether or not to give a reward mid-way towards the docking port to encourage the learning to move in the proper direction
         self.MID_WAY_REWARD_RADIUS            = 0.3 # [ms] the radius from the DOCKING_PORT_MOUNT_POSITION that the mid-way reward is given
         self.MID_WAY_REWARD                   = 25 # The value of the mid-way reward
