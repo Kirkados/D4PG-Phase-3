@@ -140,17 +140,17 @@ class Environment:
                                                           0.0, 0.0, -6*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY, # Target
                                                           0.0, 0.0, -3*self.MAX_VELOCITY, -3*self.MAX_VELOCITY]) # End-effector
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // lower bound for each element of TOTAL_STATE
-        self.UPPER_STATE_BOUND                = np.array([ 3.7, 2.4, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY,  # Chaser 
+        self.UPPER_STATE_BOUND                = np.array([ self.MAX_X_POSITION, self.MAX_Y_POSITION, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY,  # Chaser 
                                                           np.pi/2, np.pi/2, np.pi/2, # Shoulder_theta, Elbow_theta, Wrist_theta
                                                           self.MAX_ANGULAR_VELOCITY, self.MAX_ANGULAR_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Shoulder_theta_dot, Elbow_theta_dot, Wrist_theta_dot
-                                                          3.7, 2.4, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Target
-                                                          3.7, 2.4, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY]) # End-effector
+                                                          self.MAX_X_POSITION, self.MAX_Y_POSITION, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Target
+                                                          self.MAX_X_POSITION, self.MAX_Y_POSITION, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY]) # End-effector
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
-        self.INITIAL_CHASER_POSITION          = np.array([1.23, 1.2, 0.0]) # [m, m, rad]
+        self.INITIAL_CHASER_POSITION          = np.array([self.MAX_X_POSITION/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_CHASER_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.INITIAL_ARM_ANGLES               = np.array([0.0,  0.0, 0.0]) # [rad, rad, rad]
         self.INITIAL_ARM_RATES                = np.array([0.0,  0.0, 0.0]) # [rad/s, rad/s, rad/s]
-        self.INITIAL_TARGET_POSITION          = np.array([2.46, 1.2, 0.0]) # [m, m, rad]
+        self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION*2/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
         self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
@@ -1274,7 +1274,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
 
     if extra_information:
         grid_spec = gridspec.GridSpec(nrows = 2, ncols = 3, figure = figure)
-        subfig1 = figure.add_subplot(grid_spec[0,0], aspect = 'equal', autoscale_on = False, xlim = (0, 3.7), ylim = (0, 2.4))
+        subfig1 = figure.add_subplot(grid_spec[0,0], aspect = 'equal', autoscale_on = False, xlim = (0, 3.5), ylim = (0, 2.4))
         subfig2 = figure.add_subplot(grid_spec[0,1], xlim = (np.min([np.min(instantaneous_reward_log), 0]) - (np.max(instantaneous_reward_log) - np.min(instantaneous_reward_log))*0.02, np.max([np.max(instantaneous_reward_log), 0]) + (np.max(instantaneous_reward_log) - np.min(instantaneous_reward_log))*0.02), ylim = (-0.5, 0.5))
         subfig3 = figure.add_subplot(grid_spec[0,2], xlim = (np.min(loss_log)-0.01, np.max(loss_log)+0.01), ylim = (-0.5, 0.5))
         subfig4 = figure.add_subplot(grid_spec[1,0], ylim = (0, 1.02))
