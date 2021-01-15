@@ -10,7 +10,7 @@ virtualenv --no-download $SLURM_TEMPDIR/env
 source $SLURM_TEMPDIR/env/bin/activate
 pip3 install --no-index --upgrade pip
 
-pip3 install --no-index -f requirements.txt
+pip3 install --no-index -r requirements.txt
 pip3 install PyVirtualDisplay-2.0-py2.py3-none-any.whl
 pip3 install EasyProcess-0.3-py2.py3-none-any.whl
 
