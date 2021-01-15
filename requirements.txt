@@ -1,0 +1,8 @@
+Keras-Applications==1.0.8
+Keras-Preprocessing==1.1.0
+opencv-python==3.4.4.19
+psutil==5.7.3
+PyVirtualDisplay==0.2.1
+Shapely==1.7.1
+tensorboard==1.15.0
+tensorflow==1.15.0
