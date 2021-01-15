@@ -3,9 +3,10 @@
 #SBATCH --mem-per-cpu=4G    # memory
 #SBATCH --account=def-sulrich
 #SBATCH --time=0-00:01:00   # time (DD-HH:MM:SS)
-#SBATCH --output=%N-%j.out  # %N for node name, %j for jobID
+#SBATCH --output=%j.out  # %N for node name, %j for jobID
 
 module load python/3.7.4
+module load scipy-stack
 virtualenv --no-download $SLURM_TMPDIR/env
 source $SLURM_TMPDIR/env/bin/activate
 pip3 install --no-index --upgrade pip
