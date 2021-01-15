@@ -24,7 +24,9 @@ class Settings:
     NOISELESS_AT_TEST_TIME = True # Whether or not to test without action noise (Keep at True unless debugging)
     LEARN_FROM_PIXELS      = False # False = learn from state (fully observed); True = learn from pixels (partially observed)
     USE_GPU_WHEN_AVAILABLE = True # As of Nov 19, 2018, it appears better to use CPU. Re-evaluate again later
-    RANDOM_SEED            = 13
+    MAX_WALLTIME           = 9*60 # [s] max walltime before triggering an end-program
+    
+
 
     #%%
     #############################
@@ -137,3 +139,5 @@ class Settings:
     ACTION_RANGE     = UPPER_ACTION_BOUND - LOWER_ACTION_BOUND # range for each action
     STATE_MEAN       = (LOWER_STATE_BOUND + UPPER_STATE_BOUND)/2.
     STATE_HALF_RANGE = (UPPER_STATE_BOUND - LOWER_STATE_BOUND)/2.
+
+    RANDOM_SEED            = 13

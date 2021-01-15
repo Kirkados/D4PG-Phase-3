@@ -303,6 +303,10 @@ with tf.Session(config = config) as sess:
                     each_thread.join()
                 break
             
+            if (time.time() - start_time) > Settings.MAX_WALLTIME:
+                print("\nEnding due to MAX_WALLTIME of %i seconds (%.5f days) reached!" %(Settings.MAX_WALLTIME, Settings.MAX_WALLTIME/60/60/24))
+                raise KeyboardInterrupt
+            
     except KeyboardInterrupt: # if someone pressed Ctrl + C
         print("\nInterrupted by user!")
         print("Stopping all the threads!!")
