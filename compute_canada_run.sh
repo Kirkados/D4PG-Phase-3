@@ -6,8 +6,8 @@
 #SBATCH --output=%N-%j.out  # %N for node name, %j for jobID
 
 module load python/3.7.4
-virtualenv --no-download $SLURM_TEMPDIR/env
-source $SLURM_TEMPDIR/env/bin/activate
+virtualenv --no-download $SLURM_TMPDIR/env
+source $SLURM_TMPDIR/env/bin/activate
 pip3 install --no-index --upgrade pip
 
 pip3 install --no-index -r requirements.txt
