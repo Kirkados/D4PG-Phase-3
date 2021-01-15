@@ -293,7 +293,7 @@ with tf.Session(config = config) as sess:
             counter += 1
 
             # If all agents have finished, gracefully stop the learner and end
-            if np.sum(each_thread.is_alive() for each_thread in threads) <= 1:
+            if sum(each_thread.is_alive() for each_thread in threads) <= 1:
                 print("All threads ended naturally.")
                 
                 # Gracefully stop learner
