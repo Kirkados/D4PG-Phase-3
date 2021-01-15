@@ -7,6 +7,7 @@
 
 module load python/3.7.4
 module load scipy-stack
+module load geos
 virtualenv --no-download $SLURM_TMPDIR/env
 source $SLURM_TMPDIR/env/bin/activate
 pip3 install --no-index --upgrade pip
