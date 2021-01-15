@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --ntasks=20          # number of processes
-#SBATCH --mem-per-cpu=0.3G    # memory
+#SBATCH --mem-per-cpu=256M    # memory
 #SBATCH --account=def-sulrich
 #SBATCH --time=0-00:10:00   # time (DD-HH:MM:SS)
 #SBATCH --output=%j.out  # %N for node name, %j for jobID
