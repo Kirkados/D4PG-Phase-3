@@ -315,6 +315,10 @@ with tf.Session(config = config) as sess:
         # Join threads (suspends main.py until threads finish)
         for each_thread in threads:
             each_thread.join()
+        
+        if Settings.ON_COMPUTE_CANADA:
+            print("Transferring data from $SLURM_TMPDIR to scratch")
+            shutil.move(Settings.MODEL_SAVE_DIRECTORY, '~/scratch')
 
     print("This run completed in %.3f hours." %((time.time() - start_time)/3600))
     print("Done closing! Goodbye :)")

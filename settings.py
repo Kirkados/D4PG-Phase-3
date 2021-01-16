@@ -16,6 +16,7 @@ class Settings:
     ########################
 
     RUN_NAME               = '50maxAngle_2pi30rate_collision5'
+    ON_COMPUTE_CANADA      = True
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment
@@ -99,7 +100,10 @@ class Settings:
     if RESUME_TRAINING:
         MODEL_SAVE_DIRECTORY             = '../' # up one folder
     else:
-        MODEL_SAVE_DIRECTORY             = 'Tensorboard/Current/' # where to save all data
+        if ON_COMPUTE_CANADA:
+            MODEL_SAVE_DIRECTORY = '$SLURM_TMPDIR/Current/'
+        else:
+            MODEL_SAVE_DIRECTORY             = 'Tensorboard/Current/' # where to save all data
     TENSORBOARD_FILE_EXTENSION           = '.tensorboard' # file extension for tensorboard file
     SAVE_CHECKPOINT_EVERY_NUM_ITERATIONS = 10000 # how often to save the neural network parameters
     NUM_CHECKPOINT_MODELS_TO_SAVE        = 5 # How many of the most recent policy models to keep before discarding
