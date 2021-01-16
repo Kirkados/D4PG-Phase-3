@@ -7,6 +7,7 @@
 
 
 """
+import os
 
 class Settings:
 
@@ -101,7 +102,7 @@ class Settings:
         MODEL_SAVE_DIRECTORY             = '../' # up one folder
     else:
         if ON_COMPUTE_CANADA:
-            MODEL_SAVE_DIRECTORY = '$SLURM_TMPDIR/Current/'
+            MODEL_SAVE_DIRECTORY = os.environ['$SLURM_TMPDIR'] + '/Current/'
         else:
             MODEL_SAVE_DIRECTORY             = 'Tensorboard/Current/' # where to save all data
     TENSORBOARD_FILE_EXTENSION           = '.tensorboard' # file extension for tensorboard file
