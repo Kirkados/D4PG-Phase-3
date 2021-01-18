@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --ntasks=20          # number of processes
+#SBATCH --ntasks=2          # number of processes
 #SBATCH --mem-per-cpu=2G    # memory
 #SBATCH --account=def-sulrich
 #SBATCH --time=0-00:10:00   # time (DD-HH:MM:SS)
