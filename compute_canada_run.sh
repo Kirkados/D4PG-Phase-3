@@ -2,7 +2,7 @@
 #SBATCH --ntasks=2          # number of processes
 #SBATCH --mem-per-cpu=2G    # memory
 #SBATCH --account=def-sulrich
-#SBATCH --time=0-00:10:00   # time (DD-HH:MM:SS)
+#SBATCH --time=0-00:3:00   # time (DD-HH:MM:SS)
 #SBATCH --output=%j.out  # %N for node name, %j for jobID
 #SBATCH --mail-user=khovell@gmail.com
 #SBATCH --mail-type=BEGIN
