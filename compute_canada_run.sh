@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --ntasks=2          # number of processes
+#SBATCH --cpus-per-task=8          # number of CPUs requested
 #SBATCH --mem-per-cpu=2G    # memory
 #SBATCH --account=def-sulrich
 #SBATCH --time=0-00:05:00   # time (DD-HH:MM:SS)
