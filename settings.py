@@ -25,7 +25,7 @@ class Settings:
     NOISELESS_AT_TEST_TIME = True # Whether or not to test without action noise (Keep at True unless debugging)
     LEARN_FROM_PIXELS      = False # False = learn from state (fully observed); True = learn from pixels (partially observed)
     USE_GPU_WHEN_AVAILABLE = True # As of Nov 19, 2018, it appears better to use CPU. Re-evaluate again later
-    MAX_WALLTIME           = 1*60 # [s] max walltime before triggering an end-program
+    MAX_WALLTIME           = 3*60 # [s] max walltime before triggering an end-program
     
 
 
@@ -35,7 +35,7 @@ class Settings:
     #############################
 
     # Hyperparameters
-    NUMBER_OF_ACTORS        = 1
+    NUMBER_OF_ACTORS        = 2
     NUMBER_OF_EPISODES      = 1e6 # that each agent will perform
     MAX_TRAINING_ITERATIONS = 1e8 # of neural networks
     ACTOR_LEARNING_RATE     = 0.0001
