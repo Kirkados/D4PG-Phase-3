@@ -111,6 +111,7 @@ class Environment:
         The positions are in inertial frame but the manipulator angles are in the joint frame.
         
         """
+        self.ON_COMPUTE_CANADA        = True
         self.TOTAL_STATE_SIZE         = 22 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot]
         ### Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
         #         TOTAL_STATE is returned from the environment to the agent.
@@ -175,7 +176,7 @@ class Environment:
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
         self.MAX_NUMBER_OF_TIMESTEPS          = 150# per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
-        self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
+        self.SKIP_FAILED_ANIMATIONS           = False # Error the program or skip when animations fail?
         self.KI                               = [10,10,0.15,0.012,0.003,0.000044] # Returned [10,10,0.15,0.012,0.003,0.000044] Dec 19 for 0.2s timestep #[10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
                                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
@@ -1421,26 +1422,43 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     # Save the animation!
     if temp_env.SKIP_FAILED_ANIMATIONS:
         try:
-            # Save it to the working directory [have to], then move it to the proper folder
-            animator.save(filename = filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
-            # Make directory if it doesn't already exist
-            os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
-            # Move animation to the proper directory
-            os.rename(filename + '_episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
+            if temp_env.ON_COMPUTE_CANADA:
+                # Save it to the working directory [have to], then move it to the proper folder
+                animator.save(filename = os.environ['SLURM_TMPDIR'] + '/' + filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
+                # Make directory if it doesn't already exist
+                os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
+                # Move animation to the proper directory
+                os.rename(os.environ['SLURM_TMPDIR'] + '/' + filename + '_episode_' + str(episode_number) + '.mp4', os.environ['SLURM_TMPDIR'] + '/' + save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')                                
+            else:
+                # Save it to the working directory [have to], then move it to the proper folder
+                animator.save(filename = filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
+                # Make directory if it doesn't already exist
+                os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
+                # Move animation to the proper directory
+                os.rename(filename + '_episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
         except:
-            print("Skipping animation for episode %i due to an error" %episode_number)
+            ("Skipping animation for episode %i due to an error" %episode_number)
             # Try to delete the partially completed video file
             try:
                 os.remove(filename + '_episode_' + str(episode_number) + '.mp4')
             except:
                 pass
     else:
-        # Save it to the working directory [have to], then move it to the proper folder
-        animator.save(filename = filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
-        # Make directory if it doesn't already exist
-        os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
-        # Move animation to the proper directory
-        os.rename(filename + '_episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
+        if temp_env.ON_COMPUTE_CANADA:
+            # Save it to the working directory [have to], then move it to the proper folder
+            animator.save(filename = os.environ['SLURM_TMPDIR'] + '/' + filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
+            # Make directory if it doesn't already exist
+            os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
+            # Move animation to the proper directory
+            os.rename(os.environ['SLURM_TMPDIR'] + '/' + filename + '_episode_' + str(episode_number) + '.mp4', os.environ['SLURM_TMPDIR'] + '/' + save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
+
+        else:
+            # Save it to the working directory [have to], then move it to the proper folder
+            animator.save(filename = filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
+            # Make directory if it doesn't already exist
+            os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
+            # Move animation to the proper directory
+            os.rename(filename + '_episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
 
     del temp_env
     plt.close(figure)
