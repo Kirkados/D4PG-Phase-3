@@ -218,6 +218,7 @@ class Environment:
         self.CHECK_END_EFFECTOR_COLLISION     = True # Whether to do collision detection on the end-effector
         self.CHECK_END_EFFECTOR_FORBIDDEN     = True # Whether to expand the collision area to include the forbidden zone
         self.END_EFFECTOR_COLLISION_PENALTY   = 5 # [rewards/timestep] Penalty for end-effector collisions (with target or optionally with the forbidden zone)
+        self.END_ON_COLLISION                 = False # Whether to end the episode upon a collision.
         self.GIVE_MID_WAY_REWARD              = True # Whether or not to give a reward mid-way towards the docking port to encourage the learning to move in the proper direction
         self.MID_WAY_REWARD_RADIUS            = 0.3 # [ms] the radius from the DOCKING_PORT_MOUNT_POSITION that the mid-way reward is given
         self.MID_WAY_REWARD                   = 25 # The value of the mid-way reward
@@ -740,6 +741,7 @@ class Environment:
                 print("Chaser/target collision")
             self.chaser_target_collision = True
         
+        # Elbow can be within the forbidden area
         if self.CHECK_END_EFFECTOR_COLLISION and elbow_point.within(target_polygon):
             if self.test_time:
                 print("Elbow/target collision!")
@@ -788,6 +790,12 @@ class Environment:
                 print("Fell off table!")
             return True
 
+        # If we want to end the episode during a collision
+        if self.END_ON_COLLISION and np.any([self.end_effector_collision, self.forbidden_area_collision, self.chaser_target_collision, self.elbow_target_collision]):
+            if self.test_time:
+                print("Ending episode due to a collision")
+            return True
+        
         # If we've run out of timesteps
         if round(self.time/self.TIMESTEP) == self.MAX_NUMBER_OF_TIMESTEPS:
             return True

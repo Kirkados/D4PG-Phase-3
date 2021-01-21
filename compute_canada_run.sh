@@ -1,9 +1,10 @@
 #!/bin/bash
-#SBATCH --cpus-per-task=8          # number of CPUs requested
-#SBATCH --mem-per-cpu=2G    # memory
+#SBATCH --cpus-per-task=8   # number of CPUs requested. Beluga: 40; Niagara: 40 (80 for hyperthreading); Cedar: 32 (or 48); Graham: 32
+#SBATCH --time=2-00:00:00   # time (DD-HH:MM:SS) (Max on Beluga/Cedar/Graham: 7 days; Niagara 1 day)
+#SBATCH --nodes=1
+#SBATCH --mem-per-cpu=2G
 #SBATCH --account=def-sulrich
-#SBATCH --time=0-00:05:00   # time (DD-HH:MM:SS)
-#SBATCH --output=%j.out  # %N for node name, %j for jobID
+#SBATCH --output=%j.out
 #SBATCH --mail-user=khovell@gmail.com
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
