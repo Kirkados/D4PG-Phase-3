@@ -2,7 +2,7 @@
 #SBATCH --cpus-per-task=64   # number of CPUs requested. Beluga: 40; Niagara: 40 (80 for hyperthreading); Cedar: 32 (or 48); Graham: 32
 #SBATCH --time=0-00:20:00   # time (DD-HH:MM:SS) (Max on Beluga/Cedar/Graham: 7 days; Niagara 1 day)
 #SBATCH --nodes=2
-#SBATCH --mem-per-cpu=1G
+#SBATCH --mem-per-cpu=4G
 #SBATCH --account=def-sulrich
 #SBATCH --output=%j.out
 #SBATCH --mail-user=khovell@gmail.com
