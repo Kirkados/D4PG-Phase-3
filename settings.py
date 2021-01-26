@@ -16,7 +16,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'Cedar48_50collide_r0p3_-250-125bounds_Spin'
+    RUN_NAME               = 'BelugaTEST_RESTART_20MINS_endCollide_r0p1_-100-125bounds_Spin'
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment
@@ -25,7 +25,7 @@ class Settings:
     NOISELESS_AT_TEST_TIME = True # Whether or not to test without action noise (Keep at True unless debugging)
     LEARN_FROM_PIXELS      = False # False = learn from state (fully observed); True = learn from pixels (partially observed)
     USE_GPU_WHEN_AVAILABLE = True # As of Nov 19, 2018, it appears better to use CPU. Re-evaluate again later
-    MAX_WALLTIME           = 60*60*24*4 - 10*60 # [s] max walltime before triggering an end-program
+    MAX_WALLTIME           = 60*10#60*60*24*4 - 10*60 # [s] max walltime before triggering an end-program
     
 
 
