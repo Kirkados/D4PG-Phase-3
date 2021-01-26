@@ -127,7 +127,7 @@ writer = tf.summary.FileWriter(Settings.MODEL_SAVE_DIRECTORY + filename, filenam
 # Make directory if it doesn't already exist. Only do so if we aren't resuming training
 if not Settings.RESUME_TRAINING:        
     os.makedirs(os.path.dirname(Settings.MODEL_SAVE_DIRECTORY + filename + '/code/'), exist_ok=True)
-    filetypes = ('*.py', '*.txt', '*.sh')
+    filetypes = ('*.py', '*.txt', '*.sh', '*.whl')
     files_grabbed = []
     for files in filetypes:
         files_grabbed.extend(glob.glob(files))
