@@ -13,8 +13,7 @@
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=ALL
 
-module load StdEnv/2020
-module load python/3.6.10
+module load python/3.7.4
 module load scipy-stack
 module load geos
 virtualenv --no-download $SLURM_TMPDIR/env
