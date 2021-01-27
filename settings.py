@@ -20,7 +20,7 @@ class Settings:
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment
-    RECORD_VIDEO           = True
+    RECORD_VIDEO           = False
     VIDEO_RECORD_FREQUENCY = 20 # Multiples of "CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES"
     NOISELESS_AT_TEST_TIME = True # Whether or not to test without action noise (Keep at True unless debugging)
     LEARN_FROM_PIXELS      = False # False = learn from state (fully observed); True = learn from pixels (partially observed)
@@ -141,10 +141,11 @@ class Settings:
     if RESUME_TRAINING:
         MODEL_SAVE_DIRECTORY             = '../' # up one folder
     else:
-        if ON_COMPUTE_CANADA:
-            MODEL_SAVE_DIRECTORY = os.environ['SLURM_TMPDIR'] + '/Current/'
-        else:
-            MODEL_SAVE_DIRECTORY             = 'Tensorboard/Current/' # where to save all data
+        MODEL_SAVE_DIRECTORY             = 'Tensorboard/Current/' # where to save all data
+    # However, if on compute canada, use the same directory always (and modify where you copy the results to later!)
+    if ON_COMPUTE_CANADA:        
+        MODEL_SAVE_DIRECTORY             = os.environ['SLURM_TMPDIR'] + '/Current/' # high-speed read/write folder
+        
     TENSORBOARD_FILE_EXTENSION           = '.tensorboard' # file extension for tensorboard file
     SAVE_CHECKPOINT_EVERY_NUM_ITERATIONS = 10000 # how often to save the neural network parameters
     NUM_CHECKPOINT_MODELS_TO_SAVE        = 5 # How many of the most recent policy models to keep before discarding
