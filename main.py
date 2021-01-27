@@ -47,6 +47,7 @@ import psutil
 import tensorflow as tf
 import numpy as np
 import sys
+from distutils.dir_util import copy_tree
 
 # My own
 from learner import Learner
@@ -322,7 +323,8 @@ with tf.Session() as sess: #with tf.Session(config = config) as sess:
             
         if Settings.ON_COMPUTE_CANADA:
             print("Transferring data from $SLURM_TMPDIR to scratch")
-            shutil.copytree(Settings.MODEL_SAVE_DIRECTORY, 'Tensorboard/')
+            #shutil.copytree(Settings.MODEL_SAVE_DIRECTORY, 'Tensorboard/')
+            copy_tree(Settings.MODEL_SAVE_DIRECTORY, 'Tensorboard/')
             print("Done! Waiting 10 seconds to ensure everything finishes...")
             time.sleep(10)
             print("Done!")
