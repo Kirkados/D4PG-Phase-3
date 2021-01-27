@@ -320,11 +320,9 @@ with tf.Session() as sess: #with tf.Session(config = config) as sess:
         for each_thread in threads:
             each_thread.join()
             
-        print("Waiting 10 seconds")    
-        time.sleep(10)
         if Settings.ON_COMPUTE_CANADA:
             print("Transferring data from $SLURM_TMPDIR to scratch")
-            shutil.move(Settings.MODEL_SAVE_DIRECTORY, 'Tensorboard/')
+            shutil.copy2(Settings.MODEL_SAVE_DIRECTORY, 'Tensorboard/')
             print("Done! Waiting 10 seconds to ensure everything finishes...")
             time.sleep(10)
             print("Done!")
