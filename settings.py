@@ -25,7 +25,7 @@ class Settings:
     NOISELESS_AT_TEST_TIME = True # Whether or not to test without action noise (Keep at True unless debugging)
     LEARN_FROM_PIXELS      = False # False = learn from state (fully observed); True = learn from pixels (partially observed)
     USE_GPU_WHEN_AVAILABLE = True # As of Nov 19, 2018, it appears better to use CPU. Re-evaluate again later
-    MAX_WALLTIME           = 60*15#60*60*24*4 - 30*60 # [s] max walltime before triggering an end-program
+    MAX_WALLTIME           = 60*5#60*60*24*4 - 30*60 # [s] max walltime before triggering an end-program
     
 
 
