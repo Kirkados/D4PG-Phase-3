@@ -322,7 +322,7 @@ with tf.Session() as sess: #with tf.Session(config = config) as sess:
             
         if Settings.ON_COMPUTE_CANADA:
             print("Transferring data from $SLURM_TMPDIR to scratch")
-            shutil.copy2(Settings.MODEL_SAVE_DIRECTORY, 'Tensorboard/')
+            shutil.copytree(Settings.MODEL_SAVE_DIRECTORY, 'Tensorboard/')
             print("Done! Waiting 10 seconds to ensure everything finishes...")
             time.sleep(10)
             print("Done!")
