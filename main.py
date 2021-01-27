@@ -144,7 +144,7 @@ with tf.Session() as sess: #with tf.Session(config = config) as sess:
         print("\nThis run is named " + filename)
     print("\nThe environment file is: environment_" + Settings.ENVIRONMENT + '\n')
 
-    print("Full dynamics are ALWAYS being used\n")
+    print("Full dynamics are ALWAYS being used in my Phase 3 research\n")
 
     ################################################
     ### Measuring the memory size of the program ###
