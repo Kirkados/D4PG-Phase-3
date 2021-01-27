@@ -35,8 +35,9 @@ class Saver:
         if Settings.RESUME_TRAINING:
             print("\nAttempting to load in the most recent previously-trained model")
             try:
-                ckpt = tf.train.get_checkpoint_state(Settings.MODEL_SAVE_DIRECTORY)
-                self.saver.restore(self.sess, ckpt.model_checkpoint_path)
+                # Finding the most recent checkpoint file
+                most_recent_checkpoint_filename = [i for i in sorted(os.listdir('..')) if i.endswith('.index')][-1].rsplit('.',1)[0]
+                self.saver.restore(self.sess, '../' + most_recent_checkpoint_filename)
                 print("Model successfully loaded!\n")
                 return True
 
