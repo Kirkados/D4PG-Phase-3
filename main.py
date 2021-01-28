@@ -47,7 +47,6 @@ import psutil
 import tensorflow as tf
 import numpy as np
 import sys
-from distutils.dir_util import copy_tree
 
 # My own
 from learner import Learner
@@ -70,8 +69,9 @@ start_time = time.time()
 tf.reset_default_graph()
 
 # Setting Tensorflow configuration parameters
-# config = tf.ConfigProto()
-# config.intra_op_parallelism_threads = psutil.cpu_count(logical = False) # Number of CPU physical cores recommended
+config = tf.ConfigProto()
+config.intra_op_parallelism_threads = psutil.cpu_count(logical = False) # Number of CPU physical cores recommended
+config.inter_op_parallelism_threads = 32
 # if psutil.cpu_count(logical = False) == 32:
 #     config.inter_op_parallelism_threads = 32 # RCDC has 32 sockets
 # else:
@@ -138,7 +138,8 @@ if not Settings.RESUME_TRAINING:
 #######################################
 ##### Starting Tensorflow session #####
 #######################################
-with tf.Session() as sess: #with tf.Session(config = config) as sess:
+#with tf.Session() as sess: 
+with tf.Session(config = config) as sess:
     if Settings.RESUME_TRAINING:
         print("\nThis run is continuing: " + os.path.basename(os.path.normpath(os.getcwd() + '/..')))
     else:
