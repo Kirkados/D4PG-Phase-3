@@ -16,7 +16,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'TEST_RESTART_2act_5min'
+    RUN_NAME               = 'endOnCollide_5collide_-100-250_noSpin'
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment
@@ -121,8 +121,7 @@ class Settings:
     MAX_NUMBER_OF_TIMESTEPS          = env.MAX_NUMBER_OF_TIMESTEPS # per episode
     TOTAL_STATE_SIZE                 = env.TOTAL_STATE_SIZE
     AUGMENT_STATE_WITH_ACTION_LENGTH = env.AUGMENT_STATE_WITH_ACTION_LENGTH
-    VELOCITY_LIMIT                   = env.VELOCITY_LIMIT
-    ON_COMPUTE_CANADA                = env.ON_COMPUTE_CANADA    
+    VELOCITY_LIMIT                   = env.VELOCITY_LIMIT   
     
     # Delete the test environment
     del env
@@ -142,9 +141,6 @@ class Settings:
         MODEL_SAVE_DIRECTORY             = '../' # up one folder
     else:
         MODEL_SAVE_DIRECTORY             = 'Tensorboard/Current/' # where to save all data
-    # However, if on compute canada, use the same directory always (and modify where you copy the results to later!)
-    if ON_COMPUTE_CANADA:        
-        MODEL_SAVE_DIRECTORY             = os.environ['SLURM_TMPDIR'] + '/Current/' # high-speed read/write folder
         
     TENSORBOARD_FILE_EXTENSION           = '.tensorboard' # file extension for tensorboard file
     SAVE_CHECKPOINT_EVERY_NUM_ITERATIONS = 10000 # how often to save the neural network parameters

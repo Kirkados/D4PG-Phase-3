@@ -320,14 +320,6 @@ with tf.Session() as sess: #with tf.Session(config = config) as sess:
         # Join threads (suspends main.py until threads finish)
         for each_thread in threads:
             each_thread.join()
-            
-        if Settings.ON_COMPUTE_CANADA:
-            print("Transferring data from $SLURM_TMPDIR to scratch")
-            #shutil.copytree(Settings.MODEL_SAVE_DIRECTORY, 'Tensorboard/')
-            copy_tree(Settings.MODEL_SAVE_DIRECTORY, 'Tensorboard/')
-            print("Done! Waiting 10 seconds to ensure everything finishes...")
-            time.sleep(10)
-            print("Done!")
 
     print("This run completed in %.3f hours." %((time.time() - start_time)/3600))
     print("Done closing! Goodbye :)")

@@ -111,7 +111,6 @@ class Environment:
         The positions are in inertial frame but the manipulator angles are in the joint frame.
         
         """
-        self.ON_COMPUTE_CANADA        = False
         self.TOTAL_STATE_SIZE         = 22 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot]
         ### Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
         #         TOTAL_STATE is returned from the environment to the agent.
@@ -1430,20 +1429,12 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     # Save the animation!
     if temp_env.SKIP_FAILED_ANIMATIONS:
         try:
-            if temp_env.ON_COMPUTE_CANADA:
-                # Save it to the working directory [have to], then move it to the proper folder
-                animator.save(filename = os.environ['SLURM_TMPDIR'] + '/' + filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
-                # Make directory if it doesn't already exist
-                os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
-                # Move animation to the proper directory
-                os.rename(os.environ['SLURM_TMPDIR'] + '/' + filename + '_episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')                                
-            else:
-                # Save it to the working directory [have to], then move it to the proper folder
-                animator.save(filename = filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
-                # Make directory if it doesn't already exist
-                os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
-                # Move animation to the proper directory
-                os.rename(filename + '_episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
+            # Save it to the working directory [have to], then move it to the proper folder
+            animator.save(filename = filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
+            # Make directory if it doesn't already exist
+            os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
+            # Move animation to the proper directory
+            os.rename(filename + '_episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
         except:
             ("Skipping animation for episode %i due to an error" %episode_number)
             # Try to delete the partially completed video file
@@ -1452,21 +1443,12 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
             except:
                 pass
     else:
-        if temp_env.ON_COMPUTE_CANADA:
-            # Save it to the working directory [have to], then move it to the proper folder
-            animator.save(filename = os.environ['SLURM_TMPDIR'] + '/' + filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
-            # Make directory if it doesn't already exist
-            os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
-            # Move animation to the proper directory
-            os.rename(os.environ['SLURM_TMPDIR'] + '/' + filename + '_episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
-
-        else:
-            # Save it to the working directory [have to], then move it to the proper folder
-            animator.save(filename = filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
-            # Make directory if it doesn't already exist
-            os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
-            # Move animation to the proper directory
-            os.rename(filename + '_episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
+        # Save it to the working directory [have to], then move it to the proper folder
+        animator.save(filename = filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
+        # Make directory if it doesn't already exist
+        os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
+        # Move animation to the proper directory
+        os.rename(filename + '_episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
 
     del temp_env
     plt.close(figure)
