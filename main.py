@@ -71,6 +71,7 @@ tf.reset_default_graph()
 # Setting Tensorflow configuration parameters
 config = tf.ConfigProto()
 config.intra_op_parallelism_threads = psutil.cpu_count(logical = False) # Number of CPU physical cores recommended
+print(psutil.cpu_count(logical = False))
 config.inter_op_parallelism_threads = 32
 # if psutil.cpu_count(logical = False) == 32:
 #     config.inter_op_parallelism_threads = 32 # RCDC has 32 sockets
