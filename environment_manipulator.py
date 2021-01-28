@@ -87,6 +87,8 @@ import multiprocessing
 import queue
 from scipy.integrate import odeint # Numerical integrator
 
+import shutil
+
 import matplotlib
 matplotlib.use('Agg')
 
@@ -1437,7 +1439,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
                 os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
                 # Move animation to the proper directory
                 print("Copying from " + os.environ['SLURM_TMPDIR'] + '/' + 'episode_' + str(episode_number) + '.mp4' + " to " + save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
-                os.rename(os.environ['SLURM_TMPDIR'] + '/' + 'episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
+                shutil.move(os.environ['SLURM_TMPDIR'] + '/' + 'episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
                 print("Done!")
             else:
                 # Save it to the working directory [have to], then move it to the proper folder
