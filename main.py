@@ -317,6 +317,8 @@ with tf.Session(config = config) as sess:
         # Join threads (suspends main.py until threads finish)
         for each_thread in threads:
             each_thread.join()
+    
+    # Copy all videos from $SLURM_TMPDIR to Tensorboard/Current/Filename if on CEDAR
 
     print("This run completed in %.3f hours." %((time.time() - start_time)/3600))
     print("Done closing! Goodbye :)")
