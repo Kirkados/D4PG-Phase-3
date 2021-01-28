@@ -15,7 +15,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'endOnCollide_5collide_-100-250_noSpin'
+    RUN_NAME               = 'TEST_ACTOR_SWEEP_endOnCollide_5collide_-100-250_noSpin'
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment
@@ -34,7 +34,7 @@ class Settings:
     #############################
 
     # Hyperparameters
-    NUMBER_OF_ACTORS        = 3
+    NUMBER_OF_ACTORS        = 9
     NUMBER_OF_EPISODES      = 1e10 # that each agent will perform
     MAX_TRAINING_ITERATIONS = 1e10 # of neural networks
     ACTOR_LEARNING_RATE     = 0.0001
