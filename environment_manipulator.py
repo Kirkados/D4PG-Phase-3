@@ -113,7 +113,7 @@ class Environment:
         The positions are in inertial frame but the manipulator angles are in the joint frame.
         
         """
-        self.ON_CEDAR                 = True
+        self.ON_CEDAR                 = False
         self.TOTAL_STATE_SIZE         = 22 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot]
         ### Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
         #         TOTAL_STATE is returned from the environment to the agent.
@@ -165,7 +165,7 @@ class Environment:
         self.RANDOMIZATION_ARM_ANGLE          = np.pi/2 # [rad] half-range uniform randomization arm angle
         self.RANDOMIZATION_ARM_RATES          = 0.0 # [rad/s] half-range uniform randomization arm rates
         self.RANDOMIZATION_TARGET_VELOCITY    = 0.0 # [m/s] half-range uniform randomization target velocity
-        self.RANDOMIZATION_TARGET_OMEGA       = 0#2*np.pi/30 # [rad/s] half-range uniform randomization target omega
+        self.RANDOMIZATION_TARGET_OMEGA       = 2*np.pi/30 # [rad/s] half-range uniform randomization target omega
         self.MIN_V                            = -100.
         self.MAX_V                            =  125.
         self.N_STEP_RETURN                    =   5
