@@ -216,11 +216,11 @@ class Environment:
         self.END_ON_FALL                      = True # end episode on a fall off the table        
         self.FALL_OFF_TABLE_PENALTY           = 100.
         self.CHECK_CHASER_TARGET_COLLISION    = True
-        self.TARGET_COLLISION_PENALTY         = 5 # [rewards/timestep] penalty given for colliding with target  
+        self.TARGET_COLLISION_PENALTY         = 50 # [rewards/timestep] penalty given for colliding with target  
         self.CHECK_END_EFFECTOR_COLLISION     = True # Whether to do collision detection on the end-effector
         self.CHECK_END_EFFECTOR_FORBIDDEN     = True # Whether to expand the collision area to include the forbidden zone
-        self.END_EFFECTOR_COLLISION_PENALTY   = 5 # [rewards/timestep] Penalty for end-effector collisions (with target or optionally with the forbidden zone)
-        self.END_ON_COLLISION                 = True # Whether to end the episode upon a collision.
+        self.END_EFFECTOR_COLLISION_PENALTY   = 50 # [rewards/timestep] Penalty for end-effector collisions (with target or optionally with the forbidden zone)
+        self.END_ON_COLLISION                 = False # Whether to end the episode upon a collision.
         self.GIVE_MID_WAY_REWARD              = True # Whether or not to give a reward mid-way towards the docking port to encourage the learning to move in the proper direction
         self.MID_WAY_REWARD_RADIUS            = 0.1 # [ms] the radius from the DOCKING_PORT_MOUNT_POSITION that the mid-way reward is given
         self.MID_WAY_REWARD                   = 25 # The value of the mid-way reward

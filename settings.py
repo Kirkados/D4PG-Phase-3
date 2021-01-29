@@ -15,7 +15,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'TEST_ACTOR_SWEEP_endOnCollide_5collide_-100-250_noSpin'
+    RUN_NAME               = '50collide_r0p1_-100-250_noSpin_cedar'
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment
@@ -24,7 +24,7 @@ class Settings:
     NOISELESS_AT_TEST_TIME = True # Whether or not to test without action noise (Keep at True unless debugging)
     LEARN_FROM_PIXELS      = False # False = learn from state (fully observed); True = learn from pixels (partially observed)
     USE_GPU_WHEN_AVAILABLE = True # As of Nov 19, 2018, it appears better to use CPU. Re-evaluate again later
-    MAX_WALLTIME           = 60*5#60*60*24*4 - 30*60 # [s] max walltime before triggering an end-program
+    MAX_WALLTIME           = 60*60*24*4 - 30*60 # [s] max walltime before triggering an end-program
     
 
 
