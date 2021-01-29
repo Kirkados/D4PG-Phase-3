@@ -1437,8 +1437,8 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
                 animator.save(filename = os.environ['SLURM_TMPDIR'] + '/' + 'episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
                 # Make directory if it doesn't already exist
                 os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
-                # Move animation to the proper directory
-                                shutil.move(os.environ['SLURM_TMPDIR'] + '/' + 'episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
+                # Move animation to the proper directory                
+                shutil.move(os.environ['SLURM_TMPDIR'] + '/' + 'episode_' + str(episode_number) + '.mp4', save_directory + filename + '/videos/episode_' + str(episode_number) + '.mp4')
                 print("Done!")
             else:
                 # Save it to the working directory [have to], then move it to the proper folder
