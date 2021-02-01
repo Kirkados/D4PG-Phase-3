@@ -24,5 +24,5 @@ pip3 install --no-index -r requirements.txt
 pip3 install EasyProcess-0.3-py2.py3-none-any.whl
 pip3 install PyVirtualDisplay-2.0-py2.py3-none-any.whl
 
-tensorboard --logdir=$SLURM_TMPDIR/Current/ --host=0.0.0.0 &
+tensorboard --logdir=Tensorboard/Current/ --host=0.0.0.0 &
 python3 -u main.py
