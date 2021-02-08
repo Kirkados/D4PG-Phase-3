@@ -13,7 +13,7 @@
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=ALL
 
-module load python/3.7.4
+module load python/3.7.7
 module load scipy-stack
 module load geos
 virtualenv --no-download $SLURM_TMPDIR/env
