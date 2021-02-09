@@ -61,7 +61,7 @@ agent_file       = __import__('agent' + Settings.AGENT)
 
 # To gracefully end with tsp -k on RCDC
 def handle_tsp_k(signum, frame):
-    print("Tsp -k received! Ending!")
+    print("\nTsp -k received! Ending!")
     raise KeyboardInterrupt
 
 #%%
