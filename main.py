@@ -47,6 +47,7 @@ import psutil
 import tensorflow as tf
 import numpy as np
 import sys
+import signal # to catch tsp -k
 
 # My own
 from learner import Learner
@@ -58,6 +59,10 @@ import saver
 environment_file = __import__('environment_' + Settings.ENVIRONMENT)
 agent_file       = __import__('agent' + Settings.AGENT)
 
+# To gracefully end with tsp -k on RCDC
+def handle_tsp_k(signum, frame):
+    print("Tsp -k received! Ending!")
+    raise KeyboardInterrupt
 
 #%%
 ##########################
@@ -287,6 +292,7 @@ with tf.Session(config = config) as sess:
     process = psutil.Process(os.getpid())
 
     try:
+        signal.signal(signal.SIGTERM, handle_tsp_k)
         counter = 0
         while True:
             time.sleep(0.5)
