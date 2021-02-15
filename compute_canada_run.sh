@@ -12,7 +12,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=ALL
-NIAGARA=true
+NIAGARA=false
 
 if $NIAGARA # set to True if using Niagara
 then
@@ -20,7 +20,6 @@ then
    module load python/3.7.9
    module load gcc/8.3.0
    module load geos
-   tent_y=0
 else
    module load python/3.7.7
    module load scipy-stack
@@ -29,7 +28,6 @@ fi
 
 if $NIAGARA
 then
-   tree_y=0
    #virtualenv --no-download virtualEnv
    source virtualEnv/bin/activate
    #pip3 install --upgrade pip
