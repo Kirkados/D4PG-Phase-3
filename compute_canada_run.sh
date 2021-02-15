@@ -14,7 +14,7 @@
 #SBATCH --mail-type=ALL
 NIAGARA=true
 
-if [NIAGARA] # set to True if using Niagara
+if $NIAGARA # set to True if using Niagara
 then
    module load CCEnv # uncomment if on Niagara, comment otherwise
    module load StdEnv/2020 # uncomment if on Niagara, comment otherwise
@@ -22,7 +22,7 @@ fi
 module load python/3.7.7
 module load scipy-stack
 module load geos
-if [NIAGARA]
+if $NIAGARA
 then
    virtualenv --no-download virtualEnv
    source virtualEnv/bin/activate
