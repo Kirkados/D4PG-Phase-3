@@ -16,7 +16,9 @@ NIAGARA=true
 
 if $NIAGARA # set to True if using Niagara
 then
-   module load CCEnv # uncomment if on Niagara, comment otherwise
+   #module load NiaEnv
+   #module load python/3.7.9
+   module load CCEnv arch/avx512 # uncomment if on Niagara, comment otherwise
    module load StdEnv/2020 # uncomment if on Niagara, comment otherwise
 fi
 module load python/3.7.7
