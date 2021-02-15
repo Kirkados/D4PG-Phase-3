@@ -16,11 +16,9 @@ NIAGARA=true
 
 if $NIAGARA # set to True if using Niagara
 then
-   module load NiaEnv/2019b
-   module load python/3.7.9
-   module load gcc/8.3.0
-   #module load CCEnv arch/avx512 # uncomment if on Niagara, comment otherwise
-   #module load StdEnv/2020 # uncomment if on Niagara, comment otherwise
+   #module load NiaEnv/2019b
+   #module load python/3.7.9
+   #module load gcc/8.3.0
 else
    module load python/3.7.7
    module load scipy-stack
@@ -28,11 +26,11 @@ fi
 module load geos
 if $NIAGARA
 then
-   virtualenv --no-download virtualEnv
-   source virtualEnv/bin/activate
-   pip3 install --upgrade pip
-   pip3 install -r requirements.txt
-   pip3 install PyVirtualDisplay
+   #virtualenv --no-download virtualEnv
+   #source virtualEnv/bin/activate
+   #pip3 install --upgrade pip
+   #pip3 install -r requirements.txt
+   #pip3 install PyVirtualDisplay
    
 else
    virtualenv --no-download $SLURM_TMPDIR/env   
