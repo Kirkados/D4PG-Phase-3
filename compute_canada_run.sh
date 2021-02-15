@@ -31,7 +31,7 @@ if $NIAGARA
 then
    tree_y=0
    #virtualenv --no-download virtualEnv
-   #source virtualEnv/bin/activate
+   source virtualEnv/bin/activate
    #pip3 install --upgrade pip
    #pip3 install -r requirements.txt
    #pip3 install PyVirtualDisplay
