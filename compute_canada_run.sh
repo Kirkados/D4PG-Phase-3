@@ -28,11 +28,11 @@ fi
 
 if $NIAGARA
 then
-   #virtualenv --no-download virtualEnv
+   virtualenv --no-download virtualEnv
    source virtualEnv/bin/activate
-   #pip3 install --upgrade pip
-   #pip3 install -r requirements.txt
-   #pip3 install PyVirtualDisplay
+   pip3 install --upgrade pip
+   pip3 install -r requirements.txt
+   pip3 install PyVirtualDisplay
    
 else
    virtualenv --no-download $SLURM_TMPDIR/env   
