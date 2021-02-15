@@ -16,10 +16,10 @@ NIAGARA=true
 
 if $NIAGARA # set to True if using Niagara
 then
-   #module load NiaEnv/2019b
-   #module load python/3.7.9
-   #module load gcc/8.3.0
-   #module load geos
+   module load NiaEnv/2019b
+   module load python/3.7.9
+   module load gcc/8.3.0
+   module load geos
    tent_y=0
 else
    module load python/3.7.7
