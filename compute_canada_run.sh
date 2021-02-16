@@ -12,7 +12,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=ALL
-NIAGARA=false
+NIAGARA=true
 
 if $NIAGARA # set to True if using Niagara
 then
@@ -28,7 +28,7 @@ fi
 
 if $NIAGARA
 then
-   virtualenv --no-download virtualEnv
+   virtualenv --system-site-packages virtualEnv
    source virtualEnv/bin/activate
    pip3 install --upgrade pip
    pip3 install -r requirements.txt
