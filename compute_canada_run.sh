@@ -18,17 +18,19 @@
    #module load python/3.7.9
    #module load gcc/8.3.0
    #module load geos
-   #virtualenv --system-site-packages $HOME/env    
+   #virtualenv --system-site-packages $HOME/env   
+   # source $HOME/env/bin/activate   
    #pip3 install --upgrade pip
    #pip3 install -r requirements.txt
    #pip3 install PyVirtualDisplay
    
 ## Other system commands if fresh
    #module load StdEnv/2020 # if you haven't upgraded to 2020 as the default yet
-   #module load python/3.7.7
-   #module load scipy-stack
-   #module load geos
-   #virtualenv --no-download $HOME/env    
+module load python/3.7.7
+module load scipy-stack
+module load geos
+   #virtualenv --no-download $HOME/env 
+   #source $HOME/env/bin/activate   
    #pip3 install --no-index --upgrade pip
    #pip3 install --no-index -r requirements.txt
    #pip3 install EasyProcess-0.3-py2.py3-none-any.whl
