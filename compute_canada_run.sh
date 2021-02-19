@@ -29,14 +29,14 @@
 module load python/3.7.7
 module load scipy-stack
 module load geos
-virtualenv --no-download $SCRATCH/env 
-source $SCRATCH/env/bin/activate   
+virtualenv --no-download $SLURM_TMPDIR/env 
+source $SLURM_TMPDIR/env/bin/activate   
 pip3 install --no-index --upgrade pip
 pip3 install --no-index -r requirements.txt
 pip3 install EasyProcess-0.3-py2.py3-none-any.whl
 pip3 install PyVirtualDisplay-2.0-py2.py3-none-any.whl
 
-source $SCRATCH/env/bin/activate
+source $SLURM_TMPDIR/env/bin/activate
 
 
 # Submit this job from the D4PG Folder
