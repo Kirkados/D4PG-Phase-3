@@ -166,7 +166,7 @@ class Environment:
         self.RANDOMIZATION_ARM_RATES          = 0.0 # [rad/s] half-range uniform randomization arm rates
         self.RANDOMIZATION_TARGET_VELOCITY    = 0.0 # [m/s] half-range uniform randomization target velocity
         self.RANDOMIZATION_TARGET_OMEGA       = 0#2*np.pi/30 # [rad/s] half-range uniform randomization target omega
-        self.MIN_V                            = -100.
+        self.MIN_V                            = 0#-100.
         self.MAX_V                            =  125.
         self.N_STEP_RETURN                    =   5
         self.DISCOUNT_FACTOR                  = 0.95**(1/self.N_STEP_RETURN)
@@ -222,7 +222,7 @@ class Environment:
         self.DOCKING_EE_VELOCITY_PENALTY      = 50 # A penalty given to the chaser, upon docking, for every 1 m/s end-effector collision velocity upon docking
         self.DOCKING_ANGULAR_VELOCITY_PENALTY = 25 # A penalty given to the chaser, upon docking, for every 1 rad/s angular body velocity upon docking
         self.END_ON_FALL                      = True # end episode on a fall off the table        
-        self.FALL_OFF_TABLE_PENALTY           = 100.
+        self.FALL_OFF_TABLE_PENALTY           = 0#100.
         self.CHECK_CHASER_TARGET_COLLISION    = True
         self.TARGET_COLLISION_PENALTY         = 0 # [rewards/timestep] penalty given for colliding with target  
         self.CHECK_END_EFFECTOR_COLLISION     = True # Whether to do collision detection on the end-effector
