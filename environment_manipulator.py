@@ -166,7 +166,7 @@ class Environment:
         self.RANDOMIZATION_ARM_RATES          = 0.0 # [rad/s] half-range uniform randomization arm rates
         self.RANDOMIZATION_TARGET_VELOCITY    = 0.0 # [m/s] half-range uniform randomization target velocity
         self.RANDOMIZATION_TARGET_OMEGA       = 2*np.pi/30 # [rad/s] half-range uniform randomization target omega
-        self.MIN_V                            = 0#-100.
+        self.MIN_V                            = 0.#-100.
         self.MAX_V                            =  125.
         self.N_STEP_RETURN                    =   5
         self.DISCOUNT_FACTOR                  = 0.95**(1/self.N_STEP_RETURN)
