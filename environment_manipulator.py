@@ -243,13 +243,6 @@ class Environment:
         self.OBSERVATION_SIZE  = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
 
 
-    ###################################
-    ##### Seeding the environment #####
-    ###################################
-    def seed(self, seed):
-        np.random.seed(seed)
-
-
     ######################################
     ##### Resettings the Environment #####
     ######################################
@@ -258,6 +251,8 @@ class Environment:
         """ NOTES:
                - if test_time = True -> do not add "controller noise" to the kinematics
         """
+        # Reset the seed for max randomness
+        np.random.seed()
         
         # Resetting the time
         self.time = 0.
