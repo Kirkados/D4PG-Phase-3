@@ -113,7 +113,7 @@ class Environment:
         The positions are in inertial frame but the manipulator angles are in the joint frame.
         
         """
-        self.ON_CEDAR                 = False # False for Graham, Béluga, Niagara, and RCDC
+        self.ON_CEDAR                 = True # False for Graham, Béluga, Niagara, and RCDC
         self.TOTAL_STATE_SIZE         = 22 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot]
         ### Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
         #         TOTAL_STATE is returned from the environment to the agent.
@@ -121,7 +121,7 @@ class Environment:
         #         The TOTAL_STATE is passed to the animator below to animate the motion.
         #         The chaser and target state are contained in the environment. They are packaged up before being returned to the agent.
         #         The total state information returned must be as commented beside self.TOTAL_STATE_SIZE.
-        self.IRRELEVANT_STATES                = [18,19,20,21] # [end-effector states] indices of states who are irrelevant to the policy network
+        self.IRRELEVANT_STATES                = [15,16,18,19,20,21] # [target_velocity & end-effector states] indices of states who are irrelevant to the policy network
         self.OBSERVATION_SIZE                 = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
         self.ACTION_SIZE                      = 6 # [x_dot_dot, y_dot_dot, theta_dot_dot, shoulder_theta_dot_dot, elbow_theta_dot_dot, wrist_theta_dot_dot] in the inertial frame (for x and y), in the joint frame for the others.
         self.MAX_X_POSITION                   = 3.5 # [m]
