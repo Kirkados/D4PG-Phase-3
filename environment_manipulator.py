@@ -940,6 +940,9 @@ class Environment:
                 if self.DYNAMICS_DELAY > 0:
                     self.action_delay_queue.put(action,False) # puts the current action to the bottom of the stack
                     action = self.action_delay_queue.get(False) # grabs the delayed action and treats it as truth.               
+                    
+                # Rotating the [linear acceleration] action from the body frame into the inertial frame
+                action[0:2] = np.matmul(self.make_C_bI(self.chaser_position[-1]).T, action[0:2])
 
                 ################################
                 ##### Step the environment #####
