@@ -114,7 +114,7 @@ class Environment:
         
         """
         self.ON_CEDAR                 = True # False for Graham, Béluga, Niagara, and RCDC
-        self.TOTAL_STATE_SIZE         = 22 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot]
+        self.TOTAL_STATE_SIZE         = 29 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot, relative_x_b, relative_y_b, relative_theta, ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b]
         ### Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
         #         TOTAL_STATE is returned from the environment to the agent.
         #         A subset of the TOTAL_STATE, called the 'observation', is passed to the policy network to calculate acitons. This takes place in the agent
@@ -141,14 +141,18 @@ class Environment:
                                                           -np.pi/2, -np.pi/2, -np.pi/2, # Shoulder_theta, Elbow_theta, Wrist_theta
                                                           -self.MAX_ANGULAR_VELOCITY, -self.MAX_ANGULAR_VELOCITY, -self.MAX_ANGULAR_VELOCITY, # Shoulder_theta_dot, Elbow_theta_dot, Wrist_theta_dot
                                                           0.0, 0.0, -6*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY, # Target
-                                                          0.0, 0.0, -3*self.MAX_VELOCITY, -3*self.MAX_VELOCITY]) # End-effector
-                                                          # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // lower bound for each element of TOTAL_STATE
+                                                          0.0, 0.0, -3*self.MAX_VELOCITY, -3*self.MAX_VELOCITY, # End-effector
+                                                          -self.MAX_X_POSITION, -self.MAX_Y_POSITION, 0, #relative_x_b, relative_y_b, relative_theta,
+                                                          -0.688, -0.8, -0.2, -0.2]) #ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b
+                                                          # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s, m, m, rad, m, m, m/s, m/s] // lower bound for each element of TOTAL_STATE
         self.UPPER_STATE_BOUND                = np.array([ self.MAX_X_POSITION, self.MAX_Y_POSITION, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY,  # Chaser 
                                                           np.pi/2, np.pi/2, np.pi/2, # Shoulder_theta, Elbow_theta, Wrist_theta
                                                           self.MAX_ANGULAR_VELOCITY, self.MAX_ANGULAR_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Shoulder_theta_dot, Elbow_theta_dot, Wrist_theta_dot
                                                           self.MAX_X_POSITION, self.MAX_Y_POSITION, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Target
-                                                          self.MAX_X_POSITION, self.MAX_Y_POSITION, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY]) # End-effector
-                                                          # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
+                                                          self.MAX_X_POSITION, self.MAX_Y_POSITION, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY, # End-effector
+                                                          self.MAX_X_POSITION, self.MAX_Y_POSITION, 2*np.pi, #relative_x_b, relative_y_b, relative_theta,
+                                                          0.688, 0.8, 0.2, 0.2]) #ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b
+                                                          # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s, m, m, rad, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
         self.INITIAL_CHASER_POSITION          = np.array([self.MAX_X_POSITION/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_CHASER_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.INITIAL_ARM_ANGLES               = np.array([0.0,  0.0, 0.0]) # [rad, rad, rad]
@@ -298,6 +302,12 @@ class Environment:
         # Update docking component locations
         self.update_end_effector_and_docking_locations()
         
+        # Also update the end-effector position & velocity in the body frame
+        self.update_end_effector_location_body_frame()
+        
+        # Update relative pose
+        self.update_relative_pose_body_frame()
+        
         # Check for collisions
         self.check_collisions()
         # If we are colliding (unfairly) upon a reset, reset the environment again!
@@ -377,17 +387,72 @@ class Environment:
         # Velocity in Inertial = target_velocity + omega_target [cross] r_{port/G}
         self.docking_port_velocity = self.target_velocity[:-1] + self.target_velocity[-1] * np.matmul(self.make_C_bI(self.target_position[-1]).T,[-self.DOCKING_PORT_MOUNT_POSITION[1], self.DOCKING_PORT_MOUNT_POSITION[0]])
 
+    def update_end_effector_location_body_frame(self):
+        """
+        This method returns the location of the end-effector of the manipulator
+        based off the current state in the chaser's body frame
+        """
+        ##########################
+        ## End-effector Section ##
+        ##########################
+        # Unpacking the state
+        theta_1, theta_2, theta_3             = self.arm_angles
+        theta_1_dot, theta_2_dot, theta_3_dot = self.arm_angular_rates
+
+        x_ee = self.B0*np.cos(self.PHI) + (self.A1 + self.B1)*np.cos(np.pi/2 + theta_1) + \
+               (self.A2 + self.B2)*np.cos(np.pi/2 + theta_1 + theta_2) + \
+               (self.A3 + self.B3)*np.cos(np.pi/2 + theta_1 + theta_2 + theta_3)
+
+        x_ee_dot = (self.A1 + self.B1)*np.sin(np.pi/2 + theta_1)*(theta_1_dot) - \
+                           (self.A2 + self.B2)*np.sin(np.pi/2 + theta_1 + theta_2)*(theta_1_dot + theta_2_dot) - \
+                           (self.A3 + self.B3)*np.sin(np.pi/2 + theta_1 + theta_2 + theta_3)*(theta_1_dot + theta_2_dot + theta_3_dot)
+                           
+        y_ee = self.B0*np.sin(self.PHI) + (self.A1 + self.B1)*np.sin(np.pi/2 + theta_1) + \
+               (self.A2 + self.B2)*np.sin(np.pi/2 + theta_1 + theta_2) + \
+               (self.A3 + self.B3)*np.sin(np.pi/2 + theta_1 + theta_2 + theta_3)
+        
+        y_ee_dot = (self.A1 + self.B1)*np.cos(np.pi/2 + theta_1)*(theta_1_dot) + \
+                           (self.A2 + self.B2)*np.cos(np.pi/2 + theta_1 + theta_2)*(theta_1_dot + theta_2_dot) + \
+                           (self.A3 + self.B3)*np.cos(np.pi/2 + theta_1 + theta_2 + theta_3)*(theta_1_dot + theta_2_dot + theta_3_dot)
+
+        # Updates the position of the end-effector in the chaser's body frame
+        self.end_effector_position_body = np.array([x_ee, y_ee])
+        
+        # End effector velocity in the chaser's body frame
+        self.end_effector_velocity_body = np.array([x_ee_dot, y_ee_dot]) 
+
+
     def make_total_state(self):
         
         # Assembles all the data into the shape of TOTAL STATE so that it is consistent
         # chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, 
         # shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, 
         # target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, 
-        # ee_x, ee_y, ee_x_dot, ee_y_dot]
-
-        total_state = np.concatenate([self.chaser_position, self.chaser_velocity, self.arm_angles, self.arm_angular_rates, self.target_position, self.target_velocity, self.end_effector_position, self.end_effector_velocity])
+        # ee_x_I, ee_y_I, ee_x_dot_I, ee_y_dot_I,
+        # relative_x_b, relative_y_b, relative_theta,
+        # ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b]
+        
+        total_state = np.concatenate([self.chaser_position, self.chaser_velocity, self.arm_angles, self.arm_angular_rates, self.target_position, self.target_velocity, self.end_effector_position, self.end_effector_velocity, self.relative_position_body, self.relative_angle, self.end_effector_position_body, self.end_effector_velocity_body])
         
         return total_state
+    
+    def update_relative_pose_body_frame(self):
+        # Calculate the relative_x, relative_y, relative_angle
+        # All in the chaser's body frame
+                
+        chaser_angle = self.chaser_position[-1]        
+        # Rotation matrix (inertial -> body)
+        C_bI = self.make_C_bI(chaser_angle)
+                
+        # [X,Y] relative position in inertial frame
+        relative_position_inertial = self.target_position[:-1] - self.chaser_position[:-1]    
+        
+        # Rotate it to the body frame and save it
+        self.relative_position_body = np.matmul(C_bI, relative_position_inertial)
+        
+        # Relative angle and wrap it to [0, 2*np.pi]
+        self.relative_angle = np.array([(self.target_position[-1] - self.chaser_position[-1])%(2*np.pi)])
+
     
     def make_chaser_state(self):
         
@@ -447,6 +512,12 @@ class Environment:
         
         # Update docking locations
         self.update_end_effector_and_docking_locations()
+        
+        # Also update the end-effector position & velocity in the body frame
+        self.update_end_effector_location_body_frame()
+        
+        # Update relative pose
+        self.update_relative_pose_body_frame()
         
         # Check for collisions
         self.check_collisions()
@@ -838,10 +909,11 @@ class Environment:
         agent through a Queue. If an action is received, it is to step the environment
         and return the results.
         
-        TOTAL_STATE_SIZE = 22 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, 
+        TOTAL_STATE_SIZE = 29 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, 
         shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, 
         target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, 
-        ee_x, ee_y, ee_x_dot, ee_y_dot]
+        ee_x_I, ee_y_I, ee_x_dot_I, ee_y_dot_I, relative_x_b, relative_y_b, relative_theta, 
+        ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b]
             
         The positions are in the inertial frame but the manipulator angles are in the joint frame.
             
@@ -1179,7 +1251,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     """
     [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, 
      shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, 
-     target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot]
+     target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x_I, ee_y_I, ee_x_dot_I, ee_y_dot_I, relative_x_b, relative_y_b, relative_theta, ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b]
     """
     # Chaser positions
     chaser_x, chaser_y, chaser_theta, theta_1, theta_2, theta_3 = states[:,0], states[:,1], states[:,2], states[:,6], states[:,7], states[:,8]
