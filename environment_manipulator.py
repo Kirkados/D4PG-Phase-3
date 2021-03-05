@@ -113,7 +113,7 @@ class Environment:
         The positions are in inertial frame but the manipulator angles are in the joint frame.
         
         """
-        self.ON_CEDAR                 = True # False for Graham, Béluga, Niagara, and RCDC
+        self.ON_CEDAR                 = False # False for Graham, Béluga, Niagara, and RCDC
         self.TOTAL_STATE_SIZE         = 29 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot, relative_x_b, relative_y_b, relative_theta, ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b]
         ### Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
         #         TOTAL_STATE is returned from the environment to the agent.
@@ -121,7 +121,9 @@ class Environment:
         #         The TOTAL_STATE is passed to the animator below to animate the motion.
         #         The chaser and target state are contained in the environment. They are packaged up before being returned to the agent.
         #         The total state information returned must be as commented beside self.TOTAL_STATE_SIZE.
-        self.IRRELEVANT_STATES                = [15,16,18,19,20,21] # [target_velocity & end-effector states] indices of states who are irrelevant to the policy network
+        #self.IRRELEVANT_STATES                = [15,16,18,19,20,21] # [target_velocity & end-effector states] indices of states who are irrelevant to the policy network
+        self.IRRELEVANT_STATES                = [0,1,12,13,14,15,16,18,19,20,21,25,26,27,28] # [relative position and body accels] indices of states who are irrelevant to the policy network
+        #self.IRRELEVANT_STATES                = [0,1, 6, 7, 9,10,12,13,14,15,16,18,19,20,21] # [ee_b_wristangle_relative_pos_body_accels] indices of states who are irrelevant to the policy network
         self.OBSERVATION_SIZE                 = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
         self.ACTION_SIZE                      = 6 # [x_dot_dot, y_dot_dot, theta_dot_dot, shoulder_theta_dot_dot, elbow_theta_dot_dot, wrist_theta_dot_dot] in the inertial frame (for x and y), in the joint frame for the others.
         self.MAX_X_POSITION                   = 3.5 # [m]
