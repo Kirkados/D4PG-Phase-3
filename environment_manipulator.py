@@ -122,8 +122,8 @@ class Environment:
         #         The chaser and target state are contained in the environment. They are packaged up before being returned to the agent.
         #         The total state information returned must be as commented beside self.TOTAL_STATE_SIZE.
         #self.IRRELEVANT_STATES                = [15,16,18,19,20,21] # [target_velocity & end-effector states] indices of states who are irrelevant to the policy network
-        self.IRRELEVANT_STATES                = [0,1,12,13,14,15,16,18,19,20,21,25,26,27,28] # [relative position and body accels] indices of states who are irrelevant to the policy network
-        #self.IRRELEVANT_STATES                = [0,1, 6, 7, 9,10,12,13,14,15,16,18,19,20,21] # [ee_b_wristangle_relative_pos_body_accels] indices of states who are irrelevant to the policy network
+        #self.IRRELEVANT_STATES                = [0,1,12,13,14,15,16,18,19,20,21,25,26,27,28] # [relative position and body accels] indices of states who are irrelevant to the policy network
+        self.IRRELEVANT_STATES                = [0,1, 6, 7, 9,10,12,13,14,15,16,18,19,20,21] # [ee_b_wristangle_relative_pos_body_accels] indices of states who are irrelevant to the policy network
         self.OBSERVATION_SIZE                 = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
         self.ACTION_SIZE                      = 6 # [x_dot_dot, y_dot_dot, theta_dot_dot, shoulder_theta_dot_dot, elbow_theta_dot_dot, wrist_theta_dot_dot] in the inertial frame (for x and y), in the joint frame for the others.
         self.MAX_X_POSITION                   = 3.5 # [m]
