@@ -2,32 +2,24 @@
 This script provides the environment for a free flying spacecraft with a
 three-link manipulator.
 
-The spacecraft & manipulator are tasked with docking to a tumbling piece of debris
-and bringing it to rest at a desired location. This will be accomplished as follows:
-    1) First, learn how to become an expert at docking to a piece of debris safely. 
-    2) Second, learn how to bring the chaser and target to rest at a desired location.
-    Unsolved questions: 
-        1) Should I train separate policies to accomplish each sub-task? Then, the moment the debris is 
-           captured I could switch from policy 1 to policy 2? **Leaning towards this** 
-              - Should I have to completely separate environments?? Probably!!
-			  - The only problem is that there won't be continuity between the environments. Maybe I should 
-			    capture with a certain speed to ease the detumbling???! I can imagine an optimal path having
-				both goals in mind. Maybe a flag is what I'll need. Either way, let's just build the first 
-				phase first.
-        2) Should one policy be responsible for it all? With a flag saying if the target was 
-           captured yet? Or maybe even without a flag?
+The spacecraft & manipulator are tasked with simultaneously docking to and detumbling a piece of debris
+Originally this was going to be completed in two tasks, but after reading
+
+Virgili-Llop and Romano 2019, Simultaneous Capture and Detumble of a Resident Space Object by a Free-flying Spacecraft-manipulator System
+
+a simultaneous approach was chosen.
 
 The policy is trained in a DYNAMICS environment (in contrast to my previous work) for a number of reasons:
-    1) The kinematics assumes that each state has no influence on any other state. The perfect controller
+    1) Training in kinematics assumes that each state has no influence on any other state. The perfect controller
        is assumed to handle everything. This is fine for planar motion where there is no coupling between
        the states, but it does not apply to complex scenarios where there is coupling between the states.
        For example, moving the shoulder joint will affect the motion of the spacecraft--a kinematics 
        environment would not capture that.
-    2) By training in a dynamics environment, the policy will overfit the simulated dynamics. For that 
-       reason, I'll try to make them as accurate as possible. However, I will still be commanding 
+    2) By training in a dynamics environment, the policy will overfit the simulated dynamics.
+       For that reason, I'll try to make them as accurate as possible. However, I will still be commanding 
        acceleration signals which an on-board controller is responsible for tracking. So, small
        changes should be tolerated so long as they do not spoil the learned logic.
-    3) I'll also have to use a controller in simulation which will become overfit. However,
+    3) I'll have to use a controller in simulation which will also become overfit. However,
        overfitting to a real controller is probably better than overfitting to an ideal controller
        like we were doing before. Plus, we know what sort of controller we actually have in the lab.
     4) These changes are needed to solve the dynamic coupling problem present in most complex scenarios.
@@ -38,9 +30,8 @@ environments are responsible for:
     - dynamics propagation (via the step method)
     - initial conditions   (via the reset method)
     - reporting environment properties (defined in __init__)
-    - seeding the dynamics (via the seed method)
     - animating the motion (via the render method):
-        - Rendering is done all in one shot by passing the completed states
+        - Rendering is done all in one shot by passing the completed TOTAL_STATEs
           from an episode to the render() method.
 
 Outputs:
@@ -53,27 +44,32 @@ Inputs:
 
 Communication with agent:
     The agent communicates to the environment through two queues:
-        agent_to_env: the agent passes actions or reset signals to the environment
-        env_to_agent: the environment returns information to the agent
+        agent_to_env: the agent passes actions or reset signals to the environment (this script)
+        env_to_agent: the environment (this script) returns information to the agent
 
 Reward system:
-        - Zero reward at all timesteps except when docking is achieved
+        - Zero reward at nearly all timesteps except when docking is achieved
+        - A mid-way reward for when the end-effector comes within a set distance from the docking port, to help guide the learning slightly.
         - A large reward when docking occurs. The episode also terminates when docking occurs
         - A variety of penalties to help with docking, such as:
             - penalty for end-effector angle (so it goes into the docking cone properly)
             - penalty for relative velocity during the docking (so the end-effector doesn't jab the docking cone)
             - penalty for relatlive angular velocity of the end-effector during docking
-        - A penalty for colliding with the target
+            - penalty for residual angular momentum of the combined system after docking to pursuade simultaneous debumbling.
+        - A penalty for colliding with the target. Instead of assigning a penalty, the episode simply ends. A penalty alone caused
+          the chaser to accept penalties in pursuit of docking, and a penalty + ending made the chaser avoid the target all together.
+        
         Once learned, some optional rewards can be applied to see how it affects the motion:
-            - In the future, a penalty for attitude disturbance on the chaser base attitude??? Or a penalty to all accelerations??
-            - Extend the forbidden area into a larger cone to force the approach to be more cone-shaped
+            - In the future, a penalty for attitude disturbance on the chaser base attitude??? 
+            - A penalty to all accelerations??
+            - Extend the forbidden area into a larger cone to force the approach to be more cone-shaped??
 
 State clarity:
     - Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
         = TOTAL_STATE is returned from the environment to the agent.
         = A subset of the TOTAL_STATE, called the 'observation', is passed to the policy network to calculate acitons. This takes place in the agent
         = The TOTAL_STATE is passed to the animator below to animate the motion.
-        = The chaser and target state are contained in the environment. They are packaged up before being returned to the agent.
+        = The chaser and target state are contained in the environment. They are packaged up via self.make_total_state() before being returned to the agent.
         = The total state information returned must be as commented beside self.TOTAL_STATE_SIZE.
         
         
@@ -106,11 +102,9 @@ class Environment:
         ##################################
         """
         ==The State==
-        what states do I need? Relative is good, but I think I need some absolute especially for the part where I'll bring the assembly to a desired location. 
-        I'll use absolute since I'll be getting my data from PhaseSpace.
-        I've got the manipulator angles along with the end-effector position. It is redundant to have the position if I've got the angles but maybe it'll help??
-        
-        The positions are in inertial frame but the manipulator angles are in the joint frame.
+        Some absolute states and some relative states. Some manipulator states in the inertial frame and some in the body frame. In the end,
+        a subset of these are used in the actual observation. Many redundant elements were used for debugging.
+        The positions are in inertial frame, unless noted otherwise, but the manipulator angles are in the joint frame.
         
         """
         self.ON_CEDAR                 = False # False for Graham, Béluga, Niagara, and RCDC
@@ -156,13 +150,13 @@ class Environment:
                                                           0.688, 0.8, 0.2, 0.2]) #ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s, m, m, rad, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
         self.INITIAL_CHASER_POSITION          = np.array([self.MAX_X_POSITION/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
-        self.INITIAL_CHASER_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
+        self.INITIAL_CHASER_VELOCITY          = np.array([0.0,  0.0, 1.0]) # [m/s, m/s, rad/s]
         self.INITIAL_ARM_ANGLES               = np.array([0.0,  0.0, 0.0]) # [rad, rad, rad]
         self.INITIAL_ARM_RATES                = np.array([0.0,  0.0, 0.0]) # [rad/s, rad/s, rad/s]
         self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION*2/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
-        self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
+        self.RANDOMIZE_INITIAL_CONDITIONS     = False # whether or not to randomize the initial conditions
         self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
         self.RANDOMIZATION_POSITION           = 0.5 # [m] half-range uniform randomization position
         self.RANDOMIZATION_CHASER_VELOCITY    = 0.0 # [m/s] half-range uniform randomization chaser velocity
@@ -185,7 +179,9 @@ class Environment:
         self.MAX_NUMBER_OF_TIMESTEPS          = 300#150# per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
-        self.KI                               = [10,10,0.15,0.012,0.003,0.000044] # Returned [10,10,0.15,0.012,0.003,0.000044] Dec 19 for 0.2s timestep #[10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
+        self.KI                               = [10,10,0.15,0.012,0.003,0.000044] # Retuned [10,10,0.15,0.012,0.003,0.000044] Dec 19 for 0.2s timestep #[10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
+        #self.KI                               = ljgsgdhjfklg # Retune these for newest arm inertias
+        print("RETUNE GAINS FOR NEW ARM INERTIAS")
                                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
         self.LENGTH   = 0.3 # [m] side length
@@ -202,9 +198,13 @@ class Environment:
         self.A3       = 0.0621 # [m] base of link to centre of mass
         self.B3       = 0.0159 # [m] centre of mass to end of link
         self.INERTIA  = 1/12*self.MASS*(self.LENGTH**2 + self.LENGTH**2) # 0.15 [kg m^2] base inertia
+        self.INERTIA = 2.873E-1 # [kg m^2] from Crain and Ulrich
         self.INERTIA1 = 1/12*self.M1*(self.A1 + self.B1)**2 # [kg m^2] link inertia
+        self.INERTIA1 = 3.750E-3 # [kg m^2] from Crain and Ulrich
         self.INERTIA2 = 1/12*self.M2*(self.A2 + self.B2)**2 # [kg m^2] link inertia
+        self.INERTIA2 = 3.413E-3 # [kg m^2] from Crain and Ulrich
         self.INERTIA3 = 1/12*self.M3*(self.A3 + self.B3)**2 # [kg m^2] link inertia        
+        self.INERTIA3 = 5.640E-5 # [kg m^2] from Crain and Ulrich
         
         # Platform physical properties        
         self.LENGTH_RANDOMIZATION          = 0.1 # [m] standard deviation of the LENGTH randomization when domain randomization is performed.        
@@ -316,6 +316,12 @@ class Environment:
         if self.end_effector_collision or self.forbidden_area_collision or self.chaser_target_collision or self.elbow_target_collision:
             # Reset the environment again!
             self.reset(test_time)
+        
+        # artificially check reward function to see the total angular momentum
+        print("Line 315 artificially checking reward function")
+        temp_action = np.zeros(2)
+        temp_reward = self.reward_function(temp_action)
+        
  
         # Initializing the previous velocity and control effort for the integral-acceleration controller
         self.previous_velocity       = np.zeros(self.ACTION_SIZE)
@@ -718,6 +724,45 @@ class Environment:
             end_effector_angular_velocity = self.chaser_velocity[-1] + np.sum(self.arm_angular_rates)
             reward -= np.abs(end_effector_angular_velocity - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY
             
+            
+            
+            
+            #%% Building the angular momentum penalty
+            
+                    
+            # Penalize for total angular momentum of the combined system upon docking
+            
+            # First, calculate the mass matrix
+            control_effort = 0
+            t = 0
+            parameters = [control_effort, self.LENGTH, self.PHI, self.B0, self.MASS, self.M1, self.M2, self.M3, self.A1, self.B1, self.A2, self.B2, self.A3, self.B3, self.INERTIA, self.INERTIA1, self.INERTIA2, self.INERTIA3]
+            MassMatrix = calculate_mass_matrix(self.make_chaser_state(), t, parameters)
+            
+            # Then, calculate the linear and angular momentum of the chaser
+            M_b =  MassMatrix[:3,:3]
+            M_bm = MassMatrix[3:,:3]
+            
+            # Calculate [p_x, p_y, h_z] of the chaser-manipulator combined 
+            chaser_momenta = np.matmul(M_b, self.chaser_velocity) + np.matmul(M_bm, self.arm_angular_rates) 
+            
+            print("Chaser p_x: %.5f, p_y: %.5f, h_z: %.5f" %(chaser_momenta[0],chaser_momenta[1],chaser_momenta[2]))
+            print(self.chaser_velocity, self.arm_angular_rates)
+
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            #%% 
+            
+            
             if self.test_time:
                 print("docking successful! Reward given: %.1f distance: %.3f; relative velocity: %.3f velocity penalty: %.1f; docking angle: %.2f angle penalty: %.1f; angular rate error: %.3f angular rate penalty %.1f" %(reward, np.linalg.norm(self.end_effector_position - self.docking_port_position), np.linalg.norm(docking_relative_velocity), np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY, docking_angle_error*180/np.pi, np.abs(np.sin(docking_angle_error/2)) * self.MAX_DOCKING_ANGLE_PENALTY,np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]),np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY))
         
@@ -805,7 +850,11 @@ class Environment:
         self.forbidden_area_collision = False
         self.chaser_target_collision = False
         self.mid_way = False
-        self.docked = False
+        
+        print("Line 841 saying we are auto docked")
+        #self.docked = False
+        self.docked = True
+        
         self.elbow_target_collision = False
         
         if self.CHECK_END_EFFECTOR_COLLISION and end_effector_point.within(target_polygon):
@@ -972,6 +1021,30 @@ def dynamics_equations_of_motion(chaser_state, t, parameters):
     A1, B1, A2, B2, A3, B3, \
     INERTIA, INERTIA1, INERTIA2, INERTIA3 = parameters # Unpacking parameters
 
+    # Generate the mass matrix for this state
+    MassMatrix = calculate_mass_matrix(chaser_state, t, parameters)
+    
+    # Generate the coriolis matrix for this state
+    CoriolisMatrix = calculate_coriolis_matrix(chaser_state, t, parameters)
+    
+    second_derivatives = np.matmul(np.linalg.inv(MassMatrix),(control_effort - np.matmul(CoriolisMatrix, state_dot)))
+
+    first_derivatives = np.array([x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot]).reshape([6,1])
+    
+    full_derivative = np.concatenate([first_derivatives, second_derivatives]).squeeze()
+    
+    return full_derivative
+
+
+def calculate_mass_matrix(chaser_state, t, parameters):
+    # Unpacking the chaser properties from the chaser_state
+    x, y, theta, theta_1, theta_2, theta_3, x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot = chaser_state
+
+    control_effort, LENGTH, PHI, B0, \
+    MASS, M1, M2, M3, \
+    A1, B1, A2, B2, A3, B3, \
+    INERTIA, INERTIA1, INERTIA2, INERTIA3 = parameters # Unpacking parameters
+
     # Generating mass matrix using Alex's equations from InertiaFinc3LINK
     t2 = A1+B1
     t3 = A1*M1
@@ -1094,6 +1167,17 @@ def dynamics_equations_of_motion(chaser_state, t, parameters):
                            -t7*t8-t13*t14-A3*M3*t16,-t8*t23-t14*t24-A3*M3*t25,t99,INERTIA1+INERTIA2+INERTIA3+t46+t51+t57+t64+t65+t66+t67+t68+t70+t71+t72+t74+t75+t76+t77,t114,t115,
                            -t13*t28-A3*M3*t16,-t24*t28-A3*M3*t25,INERTIA2+INERTIA3+t51+t67+t68+t70+t74+t77+t85+t107-t61*t81-A3*B0*M3*t63,t114,INERTIA2+INERTIA3+t51+t67+t68+t70+t74+t77,t116,
                            -A3*M3*t16,-A3*M3*t25,INERTIA3+t70+t85+t111-A3*B0*M3*t63,t115,t116,INERTIA3+t70]).reshape([6,6], order ='F') # default order is different from matlab
+    return MassMatrix
+
+
+def calculate_coriolis_matrix(chaser_state, t, parameters):
+    # Unpacking the chaser properties from the chaser_state
+    x, y, theta, theta_1, theta_2, theta_3, x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot = chaser_state
+
+    control_effort, LENGTH, PHI, B0, \
+    MASS, M1, M2, M3, \
+    A1, B1, A2, B2, A3, B3, \
+    INERTIA, INERTIA1, INERTIA2, INERTIA3 = parameters # Unpacking parameters
 
     # Generating coriolis matrix using Alex's equations from CoriolisFinc3LINK
     t2 = A1+B1
@@ -1231,14 +1315,7 @@ def dynamics_equations_of_motion(chaser_state, t, parameters):
                                -t15*t16-t21*t22-t28*t29,-t16*t35-t22*t36-t29*t37,-t66*t67-t54*t82-t70*t71-t59*t84-t77*t78-t46*(t40+t41+t42+t43+t44+t85+t86+t87+t88+t89),-t66*t67-t70*t71-t77*t78,t112+t114-t70*t71,t122+t128,
                                -t21*t22-t28*t29,-t22*t36-t29*t37,-t54*t82-t70*t71-t59*t84-t66*t102-t77*t107,-t70*t71-t66*t102-t77*t107,-A3*M3*theta_3_dot*t8*t70,A3*M3*t8*t70*(theta_dot+theta_1_dot+theta_2_dot),
                                A3*M3*t38*np.sin(t39),-A3*M3*t38*np.cos(t39),-A3*B0*M3*t38*t59-A3*M3*t8*t38*t70-A3*M3*t2*t38*t77,-A3*M3*t8*t38*t70-A3*M3*t2*t38*t77,-A3*M3*t8*t38*t70,00]).reshape([6,6], order='F') # default order is different than matlab
-            
-    second_derivatives = np.matmul(np.linalg.inv(MassMatrix),(control_effort - np.matmul(CoriolisMatrix, state_dot)))
-
-    first_derivatives = np.array([x_dot, y_dot, theta_dot, theta_1_dot, theta_2_dot, theta_3_dot]).reshape([6,1])
-    
-    full_derivative = np.concatenate([first_derivatives, second_derivatives]).squeeze()
-    
-    return full_derivative
+    return CoriolisMatrix
 
 
 ##########################################
