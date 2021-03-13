@@ -181,7 +181,7 @@ class Environment:
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
         self.KI                               = [10,10,0.15,0.012,0.003,0.000044] # Retuned [10,10,0.15,0.012,0.003,0.000044] Dec 19 for 0.2s timestep #[10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
         #self.KI                               = ljgsgdhjfklg # Retune these for newest arm inertias
-        print("RETUNE GAINS FOR NEW ARM INERTIAS")
+        print("** RETUNE GAINS FOR NEW ARM INERTIAS")
                                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
         self.LENGTH   = 0.3 # [m] side length
@@ -190,21 +190,44 @@ class Environment:
         self.MASS     = 16.9478#10.0  # [kg] for chaser
         self.M1       = 0.3377 # [kg] link mass
         self.M2       = 0.3281 # [kg] link mass
-        self.M3       = 0.0111 # [kg] link mass
+        self.M3       = 0.0111 # [kg] link mass        
         self.A1       = 0.1933 # [m] base of link to centre of mass
         self.B1       = 0.1117 # [m] centre of mass to end of link
         self.A2       = 0.1993 # [m] base of link to centre of mass
         self.B2       = 0.1057 # [m] centre of mass to end of link
         self.A3       = 0.0621 # [m] base of link to centre of mass
         self.B3       = 0.0159 # [m] centre of mass to end of link
-        self.INERTIA  = 1/12*self.MASS*(self.LENGTH**2 + self.LENGTH**2) # 0.15 [kg m^2] base inertia
+        #self.INERTIA  = 1/12*self.MASS*(self.LENGTH**2 + self.LENGTH**2) # 0.15 [kg m^2] base inertia
         self.INERTIA = 2.873E-1 # [kg m^2] from Crain and Ulrich
-        self.INERTIA1 = 1/12*self.M1*(self.A1 + self.B1)**2 # [kg m^2] link inertia
+        #self.INERTIA1 = 1/12*self.M1*(self.A1 + self.B1)**2 # [kg m^2] link inertia
         self.INERTIA1 = 3.750E-3 # [kg m^2] from Crain and Ulrich
-        self.INERTIA2 = 1/12*self.M2*(self.A2 + self.B2)**2 # [kg m^2] link inertia
+        #self.INERTIA2 = 1/12*self.M2*(self.A2 + self.B2)**2 # [kg m^2] link inertia
         self.INERTIA2 = 3.413E-3 # [kg m^2] from Crain and Ulrich
-        self.INERTIA3 = 1/12*self.M3*(self.A3 + self.B3)**2 # [kg m^2] link inertia        
+        #self.INERTIA3 = 1/12*self.M3*(self.A3 + self.B3)**2 # [kg m^2] link inertia        
         self.INERTIA3 = 5.640E-5 # [kg m^2] from Crain and Ulrich
+        
+        print("** Artificially boosting the chaser mass and inertia for unit testing purposes line 209")
+        self.INITIAL_CHASER_POSITION          = np.array([1, 1, 0.0]) # [m, m, rad]
+        self.INITIAL_CHASER_VELOCITY          = np.array([1.0, 1.0, 1.0]) # [m/s, m/s, rad/s]
+        self.INITIAL_ARM_ANGLES               = np.array([0.0,  0.0, 0.0]) # [rad, rad, rad]
+        self.INITIAL_ARM_RATES                = np.array([0.0,  0.0, 0.0]) # [rad/s, rad/s, rad/s]
+        self.MASS = 1
+        self.M1 = 1
+        self.M2 = 1
+        self.M3 = 1
+        self.INERTIA = 1 # [kg m^2] from Crain and Ulrich
+        self.INERTIA1 = 1 # [kg m^2] from Crain and Ulrich
+        self.INERTIA2 = 1 # [kg m^2] from Crain and Ulrich    
+        self.INERTIA3 = 1 # [kg m^2] from Crain and Ulrich
+        self.LENGTH   = 0.3 # [m] side length
+        self.PHI      = 90*np.pi/180#np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
+        self.B0       = (self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
+        self.A1       = 0.15 # [m] base of link to centre of mass
+        self.B1       = 0.15 # [m] centre of mass to end of link
+        self.A2       = 0.15 # [m] base of link to centre of mass
+        self.B2       = 0.15 # [m] centre of mass to end of link
+        self.A3       = 0.15 # [m] base of link to centre of mass
+        self.B3       = 0.15 # [m] centre of mass to end of link
         
         # Platform physical properties        
         self.LENGTH_RANDOMIZATION          = 0.1 # [m] standard deviation of the LENGTH randomization when domain randomization is performed.        
@@ -318,7 +341,7 @@ class Environment:
             self.reset(test_time)
         
         # artificially check reward function to see the total angular momentum
-        print("Line 315 artificially checking reward function")
+        print("** Line 327 artificially checking reward function")
         temp_action = np.zeros(2)
         temp_reward = self.reward_function(temp_action)
         
@@ -635,8 +658,69 @@ class Environment:
         # [F_x, F_y, torque, torque1, torque2, torque3]
         return control_effort.reshape([self.ACTION_SIZE,1])
     
-    def make_jacobian(self):
-        # This method calculates the jacobian for the arm
+    def make_jacobian_Jc1(self):
+        # This method calculates the jacobian Jc1 for the arm
+
+        PHI = self.PHI
+        q0 = self.chaser_position[-1]
+        q1 = self.arm_angles[0]
+        
+        b0 = self.B0
+        a1 = self.A1
+        
+        S0 = np.sin(PHI + q0)
+        S1 = np.sin(np.pi/2 + q0 + q1) 
+        C0 = np.cos(PHI + q0)
+        C1 = np.cos(np.pi/2 + q0 + q1) 
+        
+        Jc1_13 = -b0*S0 - a1*S1
+        Jc1_14 = -a1*S1
+        Jc1_23 = b0*C0 + a1*C1
+        Jc1_24 = a1*C1
+        
+        jacobian = np.array([[1,0,Jc1_13,Jc1_14,0,0],
+                             [0,1,Jc1_23,Jc1_24,0,0],
+                             [0,0,1,1,0,0]])
+        
+        return jacobian
+    
+    def make_jacobian_Jc2(self):
+        # This method calculates the jacobian Jc2 for the arm
+
+        PHI = self.PHI
+        q0 = self.chaser_position[-1]
+        q1 = self.arm_angles[0]
+        q2 = self.arm_angles[1]
+        
+        b0 = self.B0
+        a1 = self.A1
+        b1 = self.B1
+        a2 = self.A2
+        
+        L1 = a1 + b1
+        
+        S0 = np.sin(PHI + q0)
+        S1 = np.sin(np.pi/2 + q0 + q1) 
+        S2 = np.sin(np.pi/2 + q0 + q1 + q2) 
+        C0 = np.cos(PHI + q0)
+        C1 = np.cos(np.pi/2 + q0 + q1) 
+        C2 = np.cos(np.pi/2 + q0 + q1 + q2)
+        
+        Jc2_13 = -b0*S0 - L1*S1 -a2*S2
+        Jc2_14 = -L1*S1 - a2*S2
+        Jc2_15 = -a2*S2
+        Jc2_23 = b0*C0 + L1*C1 + a2*C2
+        Jc2_24 = L1*C1 + a2*C2
+        Jc2_25 = a2*C2
+        
+        jacobian = np.array([[1,0,Jc2_13,Jc2_14,Jc2_15,0],
+                             [0,1,Jc2_23,Jc2_24,Jc2_25,0],
+                             [0,0,1,1,1,0]])
+        
+        return jacobian
+    
+    def make_jacobian_Jc3(self):
+        # This method calculates the jacobian Jc3 for the arm
 
         PHI = self.PHI
         q0 = self.chaser_position[-1]
@@ -726,9 +810,9 @@ class Environment:
             
             
             
-            
-            #%% Building the angular momentum penalty
-            
+            #############################################
+            ### Building the angular momentum penalty ###
+            #############################################
                     
             # Penalize for total angular momentum of the combined system upon docking
             
@@ -740,27 +824,99 @@ class Environment:
             
             # Then, calculate the linear and angular momentum of the chaser
             M_b =  MassMatrix[:3,:3]
-            M_bm = MassMatrix[3:,:3]
+            M_bm = MassMatrix[:3,3:]
             
             # Calculate [p_x, p_y, h_z] of the chaser-manipulator combined 
             chaser_momenta = np.matmul(M_b, self.chaser_velocity) + np.matmul(M_bm, self.arm_angular_rates) 
             
-            print("Chaser p_x: %.5f, p_y: %.5f, h_z: %.5f" %(chaser_momenta[0],chaser_momenta[1],chaser_momenta[2]))
-            print(self.chaser_velocity, self.arm_angular_rates)
+            #########################################
+            ### Calculate chaser's centre of mass ###
+            #########################################
+            
+            # Calculating the link's centre of masses in the inertial frame
+            #print(M_b)
+            #print(M_bm)
+            #print(MassMatrix)
+            x, y, theta                           = self.chaser_position
+            x_dot, y_dot, theta_dot               = self.chaser_velocity
+            theta_1, theta_2, theta_3             = self.arm_angles
+            theta_1_dot, theta_2_dot, theta_3_dot = self.arm_angular_rates
+            chaser_body_com = np.array([x,y])
+            link1_com = np.array([x + self.B0*np.cos(self.PHI + theta) + self.A1*np.cos(np.pi/2 + theta + theta_1),
+                                  y + self.B0*np.sin(self.PHI + theta) + self.A1*np.sin(np.pi/2 + theta + theta_1)])
+            link2_com = link1_com + np.array([self.B1*np.cos(np.pi/2 + theta + theta_1) + self.A2*np.cos(np.pi/2 + theta + theta_1 + theta_2),
+                                              self.B1*np.sin(np.pi/2 + theta + theta_1) + self.A2*np.sin(np.pi/2 + theta + theta_1 + theta_2)])
+            link3_com = link2_com + np.array([self.B2*np.cos(np.pi/2 + theta + theta_1 + theta_2) + self.A3*np.cos(np.pi/2 + theta + theta_1 + theta_2 + theta_3),
+                                              self.B2*np.sin(np.pi/2 + theta + theta_1 + theta_2) + self.A3*np.sin(np.pi/2 + theta + theta_1 + theta_2 + theta_3)])
+            
+            chaser_com = (self.MASS*chaser_body_com + self.M1*link1_com + self.M2*link2_com + self.M3*link3_com)/(self.MASS + self.M1 + self.M2 + self.M3)
+            
+            print("Old: Chaser p_x: %.5f, p_y: %.5f, h_z: %.5f" %(chaser_momenta[0],chaser_momenta[1],chaser_momenta[2]))
+            # print(self.chaser_velocity, self.arm_angular_rates)
+            print("Chaser centre of mass: ", chaser_com)
+            
+            
+            #################################################################################
+            ### RECALCULATING ANGULAR MOMENTUM ABOUT CENTRE OF MASS FROM FIRST PRINCIPLES ###
+            #################################################################################
+            Jc1 = self.make_jacobian_Jc1()
+            Jc2 = self.make_jacobian_Jc2()
+            Jc3 = self.make_jacobian_Jc3()
+            
+            arm1_rates = np.matmul(Jc1,np.concatenate([self.chaser_velocity, self.arm_angular_rates]))
+            arm2_rates = np.matmul(Jc2,np.concatenate([self.chaser_velocity, self.arm_angular_rates]))
+            arm3_rates = np.matmul(Jc3,np.concatenate([self.chaser_velocity, self.arm_angular_rates]))
+            
+            v1 = arm1_rates[:-1]
+            omega1 = arm1_rates[-1]
+            v2 = arm2_rates[:-1]
+            omega2 = arm2_rates[-1]
+            v3 = arm3_rates[:-1]
+            omega3 = arm3_rates[-1]
+            
+            print("Chaser position:", self.chaser_position[:-1])
+            print("Arm 1 position: ", link1_com)
+            print("Arm 2 position: ", link2_com)
+            print("Arm 3 position: ", link3_com)            
+            print("Chaser velocity:", self.chaser_velocity[:-1])
+            print("Arm 1 velocity: ", v1)
+            print("Arm 2 velocity: ", v2)
+            print("Arm 3 velocity: ", v3)
+            print("Chaser rate:", self.chaser_velocity[-1])
+            print("Arm 1 rate: ", omega1)
+            print("Arm 2 rate: ", omega2)
+            print("Arm 3 rate: ", omega3)
+            
+            h_com_chaser = self.INERTIA*self.chaser_velocity[-1] + self.MASS*np.cross(self.chaser_position[:-1] - chaser_com, self.chaser_velocity[:-1])
+            h_com_1 = self.INERTIA1*omega1 + self.M1*np.cross(link1_com - chaser_com, v1)
+            h_com_2 = self.INERTIA1*omega2 + self.M2*np.cross(link2_com - chaser_com, v2)
+            h_com_3 = self.INERTIA1*omega3 + self.M3*np.cross(link3_com - chaser_com, v3)
+            
+            print("Chaser H_com:", h_com_chaser)
+            print("Arm 1 H_com: ", h_com_1)
+            print("Arm 2 H_com: ", h_com_2)
+            print("Arm 3 H_com: ", h_com_3)
+            
+            total_angular_momentum_chaser_com = h_com_chaser + h_com_1 + h_com_2 + h_com_3
+            print("Total angular momentum about COM ", total_angular_momentum_chaser_com)
+            
+            p_chaser = self.MASS*self.chaser_velocity[:-1]
+            p_1 = self.M1*v1
+            p_2 = self.M1*v2
+            p_3 = self.M1*v3
+            
+            total_linear_momentum_chaser = p_chaser + p_1 + p_2 + p_3            
+            print("Total linear momentum of the chaser: ", total_linear_momentum_chaser)
+            
+            # Calculate linear and angular momentum of the target about its centre of mass
+            start here
+            # Calculate combined chaser-manipulator-target centre of mass
+            
+            # Calculate combined chaser-manipulator-target angular momentum
+            
+            
+            
 
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            #%% 
             
             
             if self.test_time:
@@ -851,7 +1007,7 @@ class Environment:
         self.chaser_target_collision = False
         self.mid_way = False
         
-        print("Line 841 saying we are auto docked")
+        print("** Line 869 saying we are auto docked")
         #self.docked = False
         self.docked = True
         
