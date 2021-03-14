@@ -150,15 +150,17 @@ class Environment:
                                                           0.688, 0.8, 0.2, 0.2]) #ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s, m, m, rad, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
         self.INITIAL_CHASER_POSITION          = np.array([self.MAX_X_POSITION/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
-        self.INITIAL_CHASER_VELOCITY          = np.array([0.0,  0.0, 1.0]) # [m/s, m/s, rad/s]
+        self.INITIAL_CHASER_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.INITIAL_ARM_ANGLES               = np.array([0.0,  0.0, 0.0]) # [rad, rad, rad]
         self.INITIAL_ARM_RATES                = np.array([0.0,  0.0, 0.0]) # [rad/s, rad/s, rad/s]
         self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION*2/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
-        self.RANDOMIZE_INITIAL_CONDITIONS     = False # whether or not to randomize the initial conditions
+        self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
         self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
-        self.RANDOMIZATION_POSITION           = 0.5 # [m] half-range uniform randomization position
+        #self.RANDOMIZATION_POSITION           = 0.5 # [m] half-range uniform randomization position """Replaced with individual randomizations in X and Y"""
+        self.RANDOMIZATION_LENGTH_X           = 3.5/2-0.2 # [m] half-range uniform randomization X position
+        self.RANDOMIZATION_LENGTH_Y           = 2.4/2-0.2 # [m] half-range uniform randomization Y position
         self.RANDOMIZATION_CHASER_VELOCITY    = 0.0 # [m/s] half-range uniform randomization chaser velocity
         self.RANDOMIZATION_CHASER_OMEGA       = 0.0 # [rad/s] half-range uniform randomization chaser omega
         self.RANDOMIZATION_ANGLE              = np.pi # [rad] half-range uniform randomization chaser and target base angle
@@ -210,13 +212,13 @@ class Environment:
         self.TARGET_MASS = 12.3341 # [kg]
         self.TARGET_INERTIA = 0.1850 # [kg m^2 theoretical]
         
-        print("** Artificially boosting the chaser mass and inertia for unit testing purposes line 209")
-        self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.0, 0.0]) # [m, m, rad]
-        self.INITIAL_CHASER_VELOCITY          = np.array([-0.5, 0.1, -.1]) # [m/s, m/s, rad/s]
-        self.INITIAL_ARM_ANGLES               = np.array([0, 0.0, 0.0]) # [rad, rad, rad]
-        self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
-        self.INITIAL_TARGET_POSITION          = np.array([1.0, 5.0, 0.0]) # [m, m, rad]
-        self.INITIAL_TARGET_VELOCITY          = np.array([-0.0, 0.0, 0.1]) # [m/s, m/s, rad/s]
+        # print("** Artificially boosting the chaser mass and inertia for unit testing purposes line 209")
+        # self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.0, 0.0]) # [m, m, rad]
+        # self.INITIAL_CHASER_VELOCITY          = np.array([-0.5, 0.1, -.1]) # [m/s, m/s, rad/s]
+        # self.INITIAL_ARM_ANGLES               = np.array([0, 0.0, 0.0]) # [rad, rad, rad]
+        # self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
+        # self.INITIAL_TARGET_POSITION          = np.array([1.0, 5.0, 0.0]) # [m, m, rad]
+        # self.INITIAL_TARGET_VELOCITY          = np.array([-0.0, 0.0, 0.1]) # [m/s, m/s, rad/s]
         # self.MASS = 1
         # self.TARGET_MASS = 1
         # self.TARGET_INERTIA = 1
@@ -305,11 +307,11 @@ class Environment:
         # If we are randomizing the initial conditions and state
         if self.RANDOMIZE_INITIAL_CONDITIONS:
             # Randomizing initial state in Inertial frame
-            self.chaser_position = self.INITIAL_CHASER_POSITION + np.random.uniform(low = -1, high = 1, size = 3)*[self.RANDOMIZATION_POSITION, self.RANDOMIZATION_POSITION, self.RANDOMIZATION_ANGLE]
+            self.chaser_position = self.INITIAL_CHASER_POSITION + np.random.uniform(low = -1, high = 1, size = 3)*[self.RANDOMIZATION_LENGTH_X, self.RANDOMIZATION_LENGTH_Y, self.RANDOMIZATION_ANGLE]
             # Randomizing initial claser velocity in Inertial Frame
             self.chaser_velocity = self.INITIAL_CHASER_VELOCITY + np.random.uniform(low = -1, high = 1, size = 3)*[self.RANDOMIZATION_CHASER_VELOCITY, self.RANDOMIZATION_CHASER_VELOCITY, self.RANDOMIZATION_CHASER_OMEGA]
             # Randomizing target state in Inertial frame
-            self.target_position = self.INITIAL_TARGET_POSITION + np.random.uniform(low = -1, high = 1, size = 3)*[self.RANDOMIZATION_POSITION, self.RANDOMIZATION_POSITION, self.RANDOMIZATION_ANGLE]
+            self.target_position = self.INITIAL_TARGET_POSITION + np.random.uniform(low = -1, high = 1, size = 3)*[self.RANDOMIZATION_LENGTH_X, self.RANDOMIZATION_LENGTH_Y, self.RANDOMIZATION_ANGLE]
             # Randomizing target velocity in Inertial frame
             self.target_velocity = self.INITIAL_TARGET_VELOCITY + np.random.uniform(low = -1, high = 1, size = 3)*[self.RANDOMIZATION_TARGET_VELOCITY, self.RANDOMIZATION_TARGET_VELOCITY, self.RANDOMIZATION_TARGET_OMEGA]
             # Randomizing arm angles in Body frame
@@ -348,13 +350,7 @@ class Environment:
         # If we are colliding (unfairly) upon a reset, reset the environment again!
         if self.end_effector_collision or self.forbidden_area_collision or self.chaser_target_collision or self.elbow_target_collision:
             # Reset the environment again!
-            self.reset(test_time)
-        
-        # artificially check reward function to see the total angular momentum
-        print("** Line 327 artificially checking reward function")
-        temp_action = np.zeros(2)
-        temp_reward = self.reward_function(temp_action)
-        
+            self.reset(test_time)        
  
         # Initializing the previous velocity and control effort for the integral-acceleration controller
         self.previous_velocity       = np.zeros(self.ACTION_SIZE)
@@ -820,63 +816,52 @@ class Environment:
             
             
             
-            #############################################
-            ### Building the angular momentum penalty ###
-            #############################################
-                    
-            # Penalize for total angular momentum of the combined system upon docking
-            
+            ################################
+            ### Angular momentum penalty ###
+            ################################
+            """ This is the method described in the paper 'Simultaneous Capture and Detumble of a Resident Space Object by a Free-Flying Spacecraft-Manipulator System'
+            It doesn't seem to work properly for me, likely because my manipulator angular rates are defined in their joint-frames
+            """
             # First, calculate the mass matrix
-            control_effort = 0
-            t = 0
-            parameters = [control_effort, self.LENGTH, self.PHI, self.B0, self.MASS, self.M1, self.M2, self.M3, self.A1, self.B1, self.A2, self.B2, self.A3, self.B3, self.INERTIA, self.INERTIA1, self.INERTIA2, self.INERTIA3]
-            MassMatrix = calculate_mass_matrix(self.make_chaser_state(), t, parameters)
+            #control_effort = 0
+            #t = 0
+            #parameters = [control_effort, self.LENGTH, self.PHI, self.B0, self.MASS, self.M1, self.M2, self.M3, self.A1, self.B1, self.A2, self.B2, self.A3, self.B3, self.INERTIA, self.INERTIA1, self.INERTIA2, self.INERTIA3]
+            #MassMatrix = calculate_mass_matrix(self.make_chaser_state(), t, parameters)
             
             # Then, calculate the linear and angular momentum of the chaser
-            M_b =  MassMatrix[:3,:3]
-            M_bm = MassMatrix[:3,3:]
+            #M_b =  MassMatrix[:3,:3]
+            #M_bm = MassMatrix[:3,3:]
             
             # Calculate [p_x, p_y, h_z] of the chaser-manipulator combined 
-            chaser_momenta = np.matmul(M_b, self.chaser_velocity) + np.matmul(M_bm, self.arm_angular_rates) 
+            #chaser_momenta = np.matmul(M_b, self.chaser_velocity) + np.matmul(M_bm, self.arm_angular_rates) 
             
+            """ Here is my method, calculating the angular momentum of the system using first principles """
             #########################################
             ### Calculate chaser's centre of mass ###
             #########################################
-            
-            # Calculating the link's centre of masses in the inertial frame
-            #print(M_b)
-            #print(M_bm)
-            #print(MassMatrix)
-            x, y, theta                           = self.chaser_position
-            x_dot, y_dot, theta_dot               = self.chaser_velocity
-            theta_1, theta_2, theta_3             = self.arm_angles
-            theta_1_dot, theta_2_dot, theta_3_dot = self.arm_angular_rates
+            x, y, theta               = self.chaser_position
+            theta_1, theta_2, theta_3 = self.arm_angles
             chaser_body_com = np.array([x,y])
             link1_com = np.array([x + self.B0*np.cos(self.PHI + theta) + self.A1*np.cos(np.pi/2 + theta + theta_1),
                                   y + self.B0*np.sin(self.PHI + theta) + self.A1*np.sin(np.pi/2 + theta + theta_1)])
             link2_com = link1_com + np.array([self.B1*np.cos(np.pi/2 + theta + theta_1) + self.A2*np.cos(np.pi/2 + theta + theta_1 + theta_2),
                                               self.B1*np.sin(np.pi/2 + theta + theta_1) + self.A2*np.sin(np.pi/2 + theta + theta_1 + theta_2)])
             link3_com = link2_com + np.array([self.B2*np.cos(np.pi/2 + theta + theta_1 + theta_2) + self.A3*np.cos(np.pi/2 + theta + theta_1 + theta_2 + theta_3),
-                                              self.B2*np.sin(np.pi/2 + theta + theta_1 + theta_2) + self.A3*np.sin(np.pi/2 + theta + theta_1 + theta_2 + theta_3)])
-            
+                                              self.B2*np.sin(np.pi/2 + theta + theta_1 + theta_2) + self.A3*np.sin(np.pi/2 + theta + theta_1 + theta_2 + theta_3)])            
             chaser_com = (self.MASS*chaser_body_com + self.M1*link1_com + self.M2*link2_com + self.M3*link3_com)/(self.MASS + self.M1 + self.M2 + self.M3)
-            
-            print("Old: Chaser p_x: %.5f, p_y: %.5f, h_z: %.5f" %(chaser_momenta[0],chaser_momenta[1],chaser_momenta[2]))
-            # print(self.chaser_velocity, self.arm_angular_rates)
-            
-            
-            
-            #################################################################################
-            ### RECALCULATING ANGULAR MOMENTUM ABOUT CENTRE OF MASS FROM FIRST PRINCIPLES ###
-            #################################################################################
+
+            ##############################################################
+            ### Calculate link inertial velocities using the Jacobians ###
+            ##############################################################
             Jc1 = self.make_jacobian_Jc1()
             Jc2 = self.make_jacobian_Jc2()
             Jc3 = self.make_jacobian_Jc3()
             
-            arm1_rates = np.matmul(Jc1,np.concatenate([self.chaser_velocity, self.arm_angular_rates]))
-            arm2_rates = np.matmul(Jc2,np.concatenate([self.chaser_velocity, self.arm_angular_rates]))
-            arm3_rates = np.matmul(Jc3,np.concatenate([self.chaser_velocity, self.arm_angular_rates]))
+            arm1_rates = np.matmul(Jc1, np.concatenate([self.chaser_velocity, self.arm_angular_rates]))
+            arm2_rates = np.matmul(Jc2, np.concatenate([self.chaser_velocity, self.arm_angular_rates]))
+            arm3_rates = np.matmul(Jc3, np.concatenate([self.chaser_velocity, self.arm_angular_rates]))
             
+            # Extract arm centre-of-mass velocity and arm inertial angular rate
             v1 = arm1_rates[:-1]
             omega1 = arm1_rates[-1]
             v2 = arm2_rates[:-1]
@@ -884,68 +869,72 @@ class Environment:
             v3 = arm3_rates[:-1]
             omega3 = arm3_rates[-1]
             
-            print("Chaser position:", self.chaser_position[:-1])
-            print("Arm 1 position: ", link1_com)
-            print("Arm 2 position: ", link2_com)
-            print("Arm 3 position: ", link3_com)
-            print("Chaser centre of mass position: ", chaser_com)
-            print("Target position:", self.target_position[:-1])            
-            print("Chaser velocity:", self.chaser_velocity[:-1])
-            print("Arm 1 velocity: ", v1)
-            print("Arm 2 velocity: ", v2)
-            print("Arm 3 velocity: ", v3)
-            print("Target velocity:", self.target_velocity[:-1])
-            print("Chaser rate:", self.chaser_velocity[-1])
-            print("Arm 1 rate: ", omega1)
-            print("Arm 2 rate: ", omega2)
-            print("Arm 3 rate: ", omega3)
-            print("Target rate:", self.target_velocity[-1])
+            # print("Chaser position:", self.chaser_position[:-1])
+            # print("Arm 1 position: ", link1_com)
+            # print("Arm 2 position: ", link2_com)
+            # print("Arm 3 position: ", link3_com)
+            # print("Chaser centre of mass position: ", chaser_com)
+            # print("Target position:", self.target_position[:-1])            
+            # print("Chaser velocity:", self.chaser_velocity[:-1])
+            # print("Arm 1 velocity: ", v1)
+            # print("Arm 2 velocity: ", v2)
+            # print("Arm 3 velocity: ", v3)
+            # print("Target velocity:", self.target_velocity[:-1])
+            # print("Chaser rate:", self.chaser_velocity[-1])
+            # print("Arm 1 rate: ", omega1)
+            # print("Arm 2 rate: ", omega2)
+            # print("Arm 3 rate: ", omega3)
+            # print("Target rate:", self.target_velocity[-1])
             
+            ########################################################################################
+            ### Calculate the linear and angular momentum of the chaser about its centre of mass ###
+            ########################################################################################
+            # Calculate angular momentum of each chaser object about the chaser's centre of mass
             h_com_chaser = self.INERTIA*self.chaser_velocity[-1] + self.MASS*np.cross(self.chaser_position[:-1] - chaser_com, self.chaser_velocity[:-1])
             h_com_1 = self.INERTIA1*omega1 + self.M1*np.cross(link1_com - chaser_com, v1)
             h_com_2 = self.INERTIA1*omega2 + self.M2*np.cross(link2_com - chaser_com, v2)
             h_com_3 = self.INERTIA1*omega3 + self.M3*np.cross(link3_com - chaser_com, v3)
-            
-            print("Chaser H_com:", h_com_chaser)
-            print("Arm 1 H_com: ", h_com_1)
-            print("Arm 2 H_com: ", h_com_2)
-            print("Arm 3 H_com: ", h_com_3)
-            
+            # And the combined angular momentum
             total_angular_momentum_chaser_com = h_com_chaser + h_com_1 + h_com_2 + h_com_3
-            print("Total chaser angular momentum about chaser COM ", total_angular_momentum_chaser_com)
             
+            # print("Chaser H_com:", h_com_chaser)
+            # print("Arm 1 H_com: ", h_com_1)
+            # print("Arm 2 H_com: ", h_com_2)
+            # print("Arm 3 H_com: ", h_com_3)
+            #print("Total chaser angular momentum about chaser COM ", total_angular_momentum_chaser_com)
+            
+            # Calculate the linear momentum of the chaser
             p_chaser = self.MASS*self.chaser_velocity[:-1]
             p_1 = self.M1*v1
             p_2 = self.M1*v2
-            p_3 = self.M1*v3
+            p_3 = self.M1*v3            
+            total_linear_momentum_chaser = p_chaser + p_1 + p_2 + p_3    
             
-            total_linear_momentum_chaser = p_chaser + p_1 + p_2 + p_3            
-            print("Total linear momentum of the chaser: ", total_linear_momentum_chaser)
+            #print("Total linear momentum of the chaser: ", total_linear_momentum_chaser)
             
             ####################################################################################
             ### Calculate linear and angular momentum of the target about its centre of mass ###
             ####################################################################################
             linear_momentum_target = self.TARGET_MASS*self.target_velocity[:-1]
             angular_momentum_target_com = self.TARGET_INERTIA*self.target_velocity[-1]
-            print("Target angular momentum: ", angular_momentum_target_com)
-            print("Target linear momentum: ",linear_momentum_target)
+            #print("Target angular momentum: ", angular_momentum_target_com)
+            #print("Target linear momentum: ",linear_momentum_target)            
             
-            
-            ###################################################################
-            ### Calculate combined chaser-manipulator-target centre of mass ###
-            ###################################################################
+            ############################################################################
+            ### Calculate combined chaser-manipulator-target centre of mass location ###
+            ############################################################################
             combined_com = ((self.MASS + self.M1 + self.M2 + self.M3)*chaser_com + self.TARGET_MASS*self.target_position[:-1])/(self.MASS + self.M1 + self.M2 + self.M3 + self.TARGET_MASS)
-            print("Chaser-manipulator-target combined centre of mass: ", combined_com)
+            #print("Chaser-manipulator-target combined centre of mass: ", combined_com)
             
             #####################################################################
             ### Calculate combined chaser-manipulator-target angular momentum ###
             #####################################################################
             h_total_combined_com = total_angular_momentum_chaser_com + np.cross(chaser_com - combined_com, total_linear_momentum_chaser) + angular_momentum_target_com + np.cross(self.target_position[:-1] - combined_com, linear_momentum_target)
-            print("Total combined angular momentum about combined centre of mass: ", h_total_combined_com)
+            #print("Total combined angular momentum about combined centre of mass: ", h_total_combined_com)
             
             # Calculate total combined linear momentum, for fun
-            p_total_post_capture = total_linear_momentum_chaser + linear_momentum_target
-            print("Total combined linear momentum: ", p_total_post_capture)
+            #p_total_post_capture = total_linear_momentum_chaser + linear_momentum_target
+            #print("Total combined linear momentum: ", p_total_post_capture)
             
             # Add the penalty
             reward -= self.ANGULAR_MOMENTUM_PENALTY*np.abs(h_total_combined_com)/self.AT_MAX_ANGULAR_MOMENTUM
@@ -1037,12 +1026,8 @@ class Environment:
         self.end_effector_collision = False
         self.forbidden_area_collision = False
         self.chaser_target_collision = False
-        self.mid_way = False
-        
-        print("** Line 869 saying we are auto docked")
-        #self.docked = False
-        self.docked = True
-        
+        self.mid_way = False        
+        self.docked = False        
         self.elbow_target_collision = False
         
         if self.CHECK_END_EFFECTOR_COLLISION and end_effector_point.within(target_polygon):
