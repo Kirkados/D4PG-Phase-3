@@ -15,7 +15,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'TESTMOMENTUM_AUTODOCK_1ACTOR_1EPISODE_NORANDOMIZE_ARTIFICIALDONE_ARTIFICIALREWARD_NOVIDEO_preprocessing_spin_rcdc'
+    RUN_NAME               = 'TESTMOMENTUM_1ACTOR_1EPISODE_10TIMESTEPS_preprocessing_spin_rcdc'
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment

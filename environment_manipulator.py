@@ -149,11 +149,11 @@ class Environment:
                                                           self.MAX_X_POSITION, self.MAX_Y_POSITION, 2*np.pi, #relative_x_b, relative_y_b, relative_theta,
                                                           0.688, 0.8, 0.2, 0.2]) #ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s, m, m, rad, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
-        self.INITIAL_CHASER_POSITION          = np.array([self.MAX_X_POSITION/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
+        self.INITIAL_CHASER_POSITION          = np.array([self.MAX_X_POSITION/2, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_CHASER_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.INITIAL_ARM_ANGLES               = np.array([0.0,  0.0, 0.0]) # [rad, rad, rad]
         self.INITIAL_ARM_RATES                = np.array([0.0,  0.0, 0.0]) # [rad/s, rad/s, rad/s]
-        self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION*2/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
+        self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION/2, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
         self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
@@ -173,23 +173,21 @@ class Environment:
         self.N_STEP_RETURN                    =   5
         self.DISCOUNT_FACTOR                  = 0.95**(1/self.N_STEP_RETURN)
         self.TIMESTEP                         = 0.2 # [s]
-        self.CALIBRATE_TIMESTEP               = False # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
+        self.CALIBRATE_TIMESTEP               = True # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
         self.CLIP_DURING_CALIBRATION          = True # Whether or not to clip the control forces during calibration
-        self.PREDETERMINED_ACTION             = np.array([0,0,0,0,0,0])
+        self.PREDETERMINED_ACTION             = np.array([-0.02,0.02,0,0.1,-0.05,0])
         self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
-        self.MAX_NUMBER_OF_TIMESTEPS          = 300#150# per episode
+        self.MAX_NUMBER_OF_TIMESTEPS          = 10#300#150# per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
-        self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?
-        self.KI                               = [10,10,0.15,0.012,0.003,0.000044] # Retuned [10,10,0.15,0.012,0.003,0.000044] Dec 19 for 0.2s timestep #[10,10,0.15, 0.018,0.0075,0.000044] # [Tuned Dec 19 for 0.058s timestep] Integral gain for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
-        #self.KI                               = ljgsgdhjfklg # Retune these for newest arm inertias
-        print("** RETUNE GAINS FOR NEW ARM INERTIAS")
+        self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?        
+        self.KI                               = [17.0,17.0,0.295,0.02,0.0036,0.00008] # Integral gains for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
                                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
         self.LENGTH   = 0.3 # [m] side length
         self.PHI      = 68.2840*np.pi/180#np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
         self.B0       = 0.2304#(self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
-        self.MASS     = 16.9478#10.0  # [kg] for chaser
+        self.MASS     = 16.9478# [kg] for chaser
         self.M1       = 0.3377 # [kg] link mass
         self.M2       = 0.3281 # [kg] link mass
         self.M3       = 0.0111 # [kg] link mass        
@@ -648,13 +646,13 @@ class Environment:
         
         # If we are trying to calibrate gains and torque bounds...
         if self.CALIBRATE_TIMESTEP:
-            #print("Accelerations: ", current_accelerations, " Unclipped Control Effort: ", control_effort, end = "")
+            print("Accelerations: ", current_accelerations, " Unclipped Control Effort: ", control_effort, end = "")
             if self.CLIP_DURING_CALIBRATION:
                 control_effort = np.clip(control_effort, -limits, limits)
-                #print(" Clipped Control Effort: ", control_effort)
+                print(" Clipped Control Effort: ", control_effort)
             else:
-                #print(" ")
-                pass
+                print(" ")
+                #pass
         else:
             control_effort = np.clip(control_effort, -limits, limits)
             #pass
