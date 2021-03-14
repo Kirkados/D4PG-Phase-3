@@ -1029,23 +1029,23 @@ class Environment:
         self.elbow_target_collision = False
         
         if self.CHECK_END_EFFECTOR_COLLISION and end_effector_point.within(target_polygon):
-            if self.test_time:
+            if self.test_time and self.extra_printing:
                 print("End-effector colliding with the target!")
             self.end_effector_collision = True
         
         if self.CHECK_END_EFFECTOR_FORBIDDEN and end_effector_point.within(forbidden_polygon):
-            if self.test_time:
+            if self.test_time and self.extra_printing:
                 print("End-effector within the forbidden area!")
             self.forbidden_area_collision = True
         
         if self.CHECK_CHASER_TARGET_COLLISION and chaser_polygon.intersects(target_polygon):
-            if self.test_time:
+            if self.test_time and self.extra_printing:
                 print("Chaser/target collision")
             self.chaser_target_collision = True
         
         # Elbow can be within the forbidden area
         if self.CHECK_END_EFFECTOR_COLLISION and elbow_point.within(target_polygon):
-            if self.test_time:
+            if self.test_time and self.extra_printing:
                 print("Elbow/target collision!")
             self.elbow_target_collision = True
         
@@ -1059,12 +1059,12 @@ class Environment:
         mid_way_circle = Point(self.target_position[:-1] + np.matmul(C_Ib_target, self.DOCKING_PORT_MOUNT_POSITION)).buffer(self.MID_WAY_REWARD_RADIUS)
         
         if self.GIVE_MID_WAY_REWARD and self.not_yet_mid_way and end_effector_point.within(mid_way_circle):
-            if self.test_time:
+            if self.test_time and self.extra_printing:
                 print("Mid Way!")
             self.mid_way = True
         
         if end_effector_point.within(docking_circle):
-            if self.test_time:
+            if self.test_time and self.extra_printing:
                 print("Docked!")
             self.docked = True
             
@@ -1166,6 +1166,9 @@ class Environment:
                 action = np.concatenate([np.zeros(3), -self.arm_angular_rates/2])
                 _, _ = self.step(action)
                 
+                # Disabling some of the success messages at this time
+                self.extra_printing = False
+                
                 #print("Continuing to simulate until the arm stops. Rates: %.3f, %.3f, %.3f, Norm: %.3f" %(self.arm_angular_rates[0],self.arm_angular_rates[1],self.arm_angular_rates[2], np.linalg.norm(self.arm_angular_rates)))
                 
                 if np.linalg.norm(self.arm_angular_rates) < 0.05:
@@ -1177,7 +1180,8 @@ class Environment:
                 self.env_to_agent.put((self.make_total_state(), 0, done2))
 
             else:
-                
+                # Enabling the extra printing
+                self.extra_printing = True
                 # Delay the action by DYNAMICS_DELAY timesteps. The environment accumulates the action delay--the agent still thinks the sent action was used.
                 if self.DYNAMICS_DELAY > 0:
                     self.action_delay_queue.put(action,False) # puts the current action to the bottom of the stack

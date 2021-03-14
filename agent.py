@@ -326,12 +326,12 @@ class Agent:
                             discount_factor_log.append(discount_factor)
                     
             # We are done the episode! If we want to render this one, continue animating until the arm comes to rest #
-            if self.n_agent == 1 and Settings.RECORD_VIDEO and (episode_number % (Settings.CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES*Settings.VIDEO_RECORD_FREQUENCY) == 0 or episode_number == 1):
+            if (reward > 0) and (self.n_agent == 1 and Settings.RECORD_VIDEO and (episode_number % (Settings.CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES*Settings.VIDEO_RECORD_FREQUENCY) == 0 or episode_number == 1)):
                 # Continue to step the environment and logging data. Do not place this data in the replay buffer. Only store the raw_total_state
                 done2 = False
-                
+                counter = 0
                 # Until the environment says we're done again
-                while not done2:
+                while (not done2) and (counter < 100):
                     # Sending a False to the environment tells it to slow down the arm
                     self.agent_to_env.put((False,))
     
@@ -344,6 +344,8 @@ class Agent:
                     
                     # Log the state so it can be animated
                     raw_total_state_log.append(next_total_state)
+                    
+                    counter += 1
 
             ################################
             ####### Episode Complete #######
