@@ -206,28 +206,36 @@ class Environment:
         #self.INERTIA3 = 1/12*self.M3*(self.A3 + self.B3)**2 # [kg m^2] link inertia        
         self.INERTIA3 = 5.640E-5 # [kg m^2] from Crain and Ulrich
         
+        # Target Physical Properties
+        self.TARGET_MASS = 12.3341 # [kg]
+        self.TARGET_INERTIA = 0.1850 # [kg m^2 theoretical]
+        
         print("** Artificially boosting the chaser mass and inertia for unit testing purposes line 209")
-        self.INITIAL_CHASER_POSITION          = np.array([1, 1, 0.0]) # [m, m, rad]
-        self.INITIAL_CHASER_VELOCITY          = np.array([1.0, 1.0, 1.0]) # [m/s, m/s, rad/s]
-        self.INITIAL_ARM_ANGLES               = np.array([0.0,  0.0, 0.0]) # [rad, rad, rad]
-        self.INITIAL_ARM_RATES                = np.array([0.0,  0.0, 0.0]) # [rad/s, rad/s, rad/s]
-        self.MASS = 1
-        self.M1 = 1
-        self.M2 = 1
-        self.M3 = 1
-        self.INERTIA = 1 # [kg m^2] from Crain and Ulrich
-        self.INERTIA1 = 1 # [kg m^2] from Crain and Ulrich
-        self.INERTIA2 = 1 # [kg m^2] from Crain and Ulrich    
-        self.INERTIA3 = 1 # [kg m^2] from Crain and Ulrich
-        self.LENGTH   = 0.3 # [m] side length
-        self.PHI      = 90*np.pi/180#np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
-        self.B0       = (self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
-        self.A1       = 0.15 # [m] base of link to centre of mass
-        self.B1       = 0.15 # [m] centre of mass to end of link
-        self.A2       = 0.15 # [m] base of link to centre of mass
-        self.B2       = 0.15 # [m] centre of mass to end of link
-        self.A3       = 0.15 # [m] base of link to centre of mass
-        self.B3       = 0.15 # [m] centre of mass to end of link
+        self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.0, 0.0]) # [m, m, rad]
+        self.INITIAL_CHASER_VELOCITY          = np.array([-0.5, 0.1, -.1]) # [m/s, m/s, rad/s]
+        self.INITIAL_ARM_ANGLES               = np.array([0, 0.0, 0.0]) # [rad, rad, rad]
+        self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
+        self.INITIAL_TARGET_POSITION          = np.array([1.0, 5.0, 0.0]) # [m, m, rad]
+        self.INITIAL_TARGET_VELOCITY          = np.array([-0.0, 0.0, 0.1]) # [m/s, m/s, rad/s]
+        # self.MASS = 1
+        # self.TARGET_MASS = 1
+        # self.TARGET_INERTIA = 1
+        # self.M1 = 1
+        # self.M2 = 1
+        # self.M3 = 1
+        # self.INERTIA = 1 # [kg m^2] from Crain and Ulrich
+        # self.INERTIA1 = 1 # [kg m^2] from Crain and Ulrich
+        # self.INERTIA2 = 1 # [kg m^2] from Crain and Ulrich    
+        # self.INERTIA3 = 1 # [kg m^2] from Crain and Ulrich
+        # self.LENGTH   = 1 # [m] side length
+        # self.PHI      = 90*np.pi/180#np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
+        # self.B0       = (self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
+        # self.A1       = 0.5 # [m] base of link to centre of mass
+        # self.B1       = 0.5 # [m] centre of mass to end of link
+        # self.A2       = 0.5 # [m] base of link to centre of mass
+        # self.B2       = 0.5 # [m] centre of mass to end of link
+        # self.A3       = 0.5 # [m] base of link to centre of mass
+        # self.B3       = 0.5 # [m] centre of mass to end of link
         
         # Platform physical properties        
         self.LENGTH_RANDOMIZATION          = 0.1 # [m] standard deviation of the LENGTH randomization when domain randomization is performed.        
@@ -261,6 +269,8 @@ class Environment:
         self.GIVE_MID_WAY_REWARD              = True # Whether or not to give a reward mid-way towards the docking port to encourage the learning to move in the proper direction
         self.MID_WAY_REWARD_RADIUS            = 0.1 # [ms] the radius from the DOCKING_PORT_MOUNT_POSITION that the mid-way reward is given
         self.MID_WAY_REWARD                   = 25 # The value of the mid-way reward
+        self.ANGULAR_MOMENTUM_PENALTY         = 50 # Max angular momentum penalty to give...
+        self.AT_MAX_ANGULAR_MOMENTUM          = 15 # [kg m^2/s] which is given at this angular momentum
         
         
         # Some calculations that don't need to be changed
@@ -853,7 +863,7 @@ class Environment:
             
             print("Old: Chaser p_x: %.5f, p_y: %.5f, h_z: %.5f" %(chaser_momenta[0],chaser_momenta[1],chaser_momenta[2]))
             # print(self.chaser_velocity, self.arm_angular_rates)
-            print("Chaser centre of mass: ", chaser_com)
+            
             
             
             #################################################################################
@@ -877,15 +887,19 @@ class Environment:
             print("Chaser position:", self.chaser_position[:-1])
             print("Arm 1 position: ", link1_com)
             print("Arm 2 position: ", link2_com)
-            print("Arm 3 position: ", link3_com)            
+            print("Arm 3 position: ", link3_com)
+            print("Chaser centre of mass position: ", chaser_com)
+            print("Target position:", self.target_position[:-1])            
             print("Chaser velocity:", self.chaser_velocity[:-1])
             print("Arm 1 velocity: ", v1)
             print("Arm 2 velocity: ", v2)
             print("Arm 3 velocity: ", v3)
+            print("Target velocity:", self.target_velocity[:-1])
             print("Chaser rate:", self.chaser_velocity[-1])
             print("Arm 1 rate: ", omega1)
             print("Arm 2 rate: ", omega2)
             print("Arm 3 rate: ", omega3)
+            print("Target rate:", self.target_velocity[-1])
             
             h_com_chaser = self.INERTIA*self.chaser_velocity[-1] + self.MASS*np.cross(self.chaser_position[:-1] - chaser_com, self.chaser_velocity[:-1])
             h_com_1 = self.INERTIA1*omega1 + self.M1*np.cross(link1_com - chaser_com, v1)
@@ -898,7 +912,7 @@ class Environment:
             print("Arm 3 H_com: ", h_com_3)
             
             total_angular_momentum_chaser_com = h_com_chaser + h_com_1 + h_com_2 + h_com_3
-            print("Total angular momentum about COM ", total_angular_momentum_chaser_com)
+            print("Total chaser angular momentum about chaser COM ", total_angular_momentum_chaser_com)
             
             p_chaser = self.MASS*self.chaser_velocity[:-1]
             p_1 = self.M1*v1
@@ -908,19 +922,37 @@ class Environment:
             total_linear_momentum_chaser = p_chaser + p_1 + p_2 + p_3            
             print("Total linear momentum of the chaser: ", total_linear_momentum_chaser)
             
-            # Calculate linear and angular momentum of the target about its centre of mass
-            start here
-            # Calculate combined chaser-manipulator-target centre of mass
+            ####################################################################################
+            ### Calculate linear and angular momentum of the target about its centre of mass ###
+            ####################################################################################
+            linear_momentum_target = self.TARGET_MASS*self.target_velocity[:-1]
+            angular_momentum_target_com = self.TARGET_INERTIA*self.target_velocity[-1]
+            print("Target angular momentum: ", angular_momentum_target_com)
+            print("Target linear momentum: ",linear_momentum_target)
             
-            # Calculate combined chaser-manipulator-target angular momentum
             
+            ###################################################################
+            ### Calculate combined chaser-manipulator-target centre of mass ###
+            ###################################################################
+            combined_com = ((self.MASS + self.M1 + self.M2 + self.M3)*chaser_com + self.TARGET_MASS*self.target_position[:-1])/(self.MASS + self.M1 + self.M2 + self.M3 + self.TARGET_MASS)
+            print("Chaser-manipulator-target combined centre of mass: ", combined_com)
             
+            #####################################################################
+            ### Calculate combined chaser-manipulator-target angular momentum ###
+            #####################################################################
+            h_total_combined_com = total_angular_momentum_chaser_com + np.cross(chaser_com - combined_com, total_linear_momentum_chaser) + angular_momentum_target_com + np.cross(self.target_position[:-1] - combined_com, linear_momentum_target)
+            print("Total combined angular momentum about combined centre of mass: ", h_total_combined_com)
             
-
+            # Calculate total combined linear momentum, for fun
+            p_total_post_capture = total_linear_momentum_chaser + linear_momentum_target
+            print("Total combined linear momentum: ", p_total_post_capture)
+            
+            # Add the penalty
+            reward -= self.ANGULAR_MOMENTUM_PENALTY*np.abs(h_total_combined_com)/self.AT_MAX_ANGULAR_MOMENTUM
             
             
             if self.test_time:
-                print("docking successful! Reward given: %.1f distance: %.3f; relative velocity: %.3f velocity penalty: %.1f; docking angle: %.2f angle penalty: %.1f; angular rate error: %.3f angular rate penalty %.1f" %(reward, np.linalg.norm(self.end_effector_position - self.docking_port_position), np.linalg.norm(docking_relative_velocity), np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY, docking_angle_error*180/np.pi, np.abs(np.sin(docking_angle_error/2)) * self.MAX_DOCKING_ANGLE_PENALTY,np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]),np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY))
+                print("Docking successful! Reward given: %.1f; distance: %.3f m\n-Relative ee velocity: %.3f m/s; penalty: %.1f\n-Docking angle error: %.2f deg; penalty: %.1f\n-EE angular rate error: %.3f; penalty %.1f\n-Combined angular momentum: %.3f Nms; penalty: %.1f" %(reward, np.linalg.norm(self.end_effector_position - self.docking_port_position), np.linalg.norm(docking_relative_velocity), np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY, docking_angle_error*180/np.pi, np.abs(np.sin(docking_angle_error/2)) * self.MAX_DOCKING_ANGLE_PENALTY,np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]),np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY, h_total_combined_com, self.ANGULAR_MOMENTUM_PENALTY*np.abs(h_total_combined_com)/self.AT_MAX_ANGULAR_MOMENTUM))
         
         # Give a reward for passing a "mid-way" mark
         if self.GIVE_MID_WAY_REWARD and self.not_yet_mid_way and self.mid_way:
