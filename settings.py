@@ -15,7 +15,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'TESTMOMENTUM_1ACTOR_1EPISODE_10TIMESTEPS_preprocessing_spin_rcdc'
+    RUN_NAME               = 'Angular_momentum_noAnimate_spin_rcdc'
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment
@@ -34,8 +34,8 @@ class Settings:
     #############################
 
     # Hyperparameters
-    NUMBER_OF_ACTORS        = 1#10 # ideal number of agents it seems
-    NUMBER_OF_EPISODES      = 1#1e10 # that each agent will perform
+    NUMBER_OF_ACTORS        = 10 # ideal number of agents it seems
+    NUMBER_OF_EPISODES      = 1e10 # that each agent will perform
     MAX_TRAINING_ITERATIONS = 1e10 # of neural networks
     ACTOR_LEARNING_RATE     = 0.0001
     CRITIC_LEARNING_RATE    = 0.0001

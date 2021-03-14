@@ -160,7 +160,7 @@ class Agent:
             # Only agent_1 is used for test time
             test_time = (self.n_agent == 1) and (episode_number % Settings.CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES == 0 or episode_number == 1)
 
-            # Resetting the environment for this episode by sending a boolean
+            # Resetting the environment for this episode by sending a True
             self.agent_to_env.put((True, test_time)) # Reset into a dynamics environment
             total_state = self.env_to_agent.get()
             
@@ -324,6 +324,26 @@ class Agent:
                             instantaneous_reward_log.append(n_step_reward)
                             done_log.append(done)
                             discount_factor_log.append(discount_factor)
+                    
+            # We are done the episode! If we want to render this one, continue animating until the arm comes to rest #
+            if self.n_agent == 1 and Settings.RECORD_VIDEO and (episode_number % (Settings.CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES*Settings.VIDEO_RECORD_FREQUENCY) == 0 or episode_number == 1):
+                # Continue to step the environment and logging data. Do not place this data in the replay buffer. Only store the raw_total_state
+                done2 = False
+                
+                # Until the environment says we're done again
+                while not done2:
+                    # Sending a False to the environment tells it to slow down the arm
+                    self.agent_to_env.put((False,))
+    
+                    # Receive results from stepped environment
+                    next_total_state, _, done2 = self.env_to_agent.get() # The * means the variable will be unpacked only if it exists
+                    
+                    # Augment total_state with past actions, if appropriate
+                    if Settings.AUGMENT_STATE_WITH_ACTION_LENGTH > 0:
+                        next_total_state = self.augment_state_with_actions(next_total_state)
+                    
+                    # Log the state so it can be animated
+                    raw_total_state_log.append(next_total_state)
 
             ################################
             ####### Episode Complete #######

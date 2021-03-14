@@ -173,12 +173,12 @@ class Environment:
         self.N_STEP_RETURN                    =   5
         self.DISCOUNT_FACTOR                  = 0.95**(1/self.N_STEP_RETURN)
         self.TIMESTEP                         = 0.2 # [s]
-        self.CALIBRATE_TIMESTEP               = True # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
+        self.CALIBRATE_TIMESTEP               = False # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
         self.CLIP_DURING_CALIBRATION          = True # Whether or not to clip the control forces during calibration
-        self.PREDETERMINED_ACTION             = np.array([-0.02,0.02,0,0.1,-0.05,0])
+        self.PREDETERMINED_ACTION             = np.array([-0.02,0.02,0,0.1,-0.05,0.1])
         self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
-        self.MAX_NUMBER_OF_TIMESTEPS          = 10#300#150# per episode
+        self.MAX_NUMBER_OF_TIMESTEPS          = 300#150# per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?        
         self.KI                               = [17.0,17.0,0.295,0.02,0.0036,0.00008] # Integral gains for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
@@ -1148,13 +1148,33 @@ class Environment:
         while True:
             # Blocks until the agent passes us an action
             action, *test_time = self.agent_to_env.get()
+            
+            #print(action)
 
-            if type(action) == bool:
+            if type(action) == bool and action == True:
                 # The signal to reset the environment was received
                 self.reset(test_time[0])
                 
                 # Return the TOTAL_STATE
                 self.env_to_agent.put(self.make_total_state())
+                
+            elif type(action) == bool and action == False:
+                # The episode has completed, now simulate a few more frames until the arm comes to rest
+                # Unfortunately, the dynamics have changed. The third manipulator link should now absorb the target's mass and inertia. I believe I can overwrite this here
+                
+                # Commanding an acceleration to slow down the arm
+                action = np.concatenate([np.zeros(3), -self.arm_angular_rates/2])
+                _, _ = self.step(action)
+                
+                #print("Continuing to simulate until the arm stops. Rates: %.3f, %.3f, %.3f, Norm: %.3f" %(self.arm_angular_rates[0],self.arm_angular_rates[1],self.arm_angular_rates[2], np.linalg.norm(self.arm_angular_rates)))
+                
+                if np.linalg.norm(self.arm_angular_rates) < 0.05:
+                    done2 = True
+                else:
+                    done2 = False
+                    
+                # Return (TOTAL_STATE, _, done)
+                self.env_to_agent.put((self.make_total_state(), 0, done2))
 
             else:
                 
@@ -1711,19 +1731,26 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
         thisy = [shoulder_y[frame], elbow_y[frame], wrist_y[frame], end_effector_y[frame]]
         manipulator.set_data(thisx, thisy)
 
-        # Update the time text
-        time_text.set_text('Time = %.1f s' %(frame*temp_env.TIMESTEP))
+        
         
         # Update the control text
-        control1_text.set_text('$\ddot{x}$ = %6.3f; true = %6.3f' %(actions[frame,0], accelerations[frame,0]))
-        control2_text.set_text('$\ddot{y}$ = %6.3f; true = %6.3f' %(actions[frame,1], accelerations[frame,1]))
-        control3_text.set_text(r'$\ddot{\theta}$ = %1.3f; true = %6.3f' %(actions[frame,2], accelerations[frame,2]))
-        control4_text.set_text('$\ddot{q_0}$ = %6.3f; true = %6.3f' %(actions[frame,3], accelerations[frame,3]))
-        control5_text.set_text('$\ddot{q_1}$ = %6.3f; true = %6.3f' %(actions[frame,4], accelerations[frame,4]))
-        control6_text.set_text('$\ddot{q_2}$ = %6.3f; true = %6.3f' %(actions[frame,5], accelerations[frame,5]))
+        try:
+            control1_text.set_text('$\ddot{x}$ = %6.3f; true = %6.3f' %(actions[frame,0], accelerations[frame,0]))
+            control2_text.set_text('$\ddot{y}$ = %6.3f; true = %6.3f' %(actions[frame,1], accelerations[frame,1]))
+            control3_text.set_text(r'$\ddot{\theta}$ = %1.3f; true = %6.3f' %(actions[frame,2], accelerations[frame,2]))
+            control4_text.set_text('$\ddot{q_0}$ = %6.3f; true = %6.3f' %(actions[frame,3], accelerations[frame,3]))
+            control5_text.set_text('$\ddot{q_1}$ = %6.3f; true = %6.3f' %(actions[frame,4], accelerations[frame,4]))
+            control6_text.set_text('$\ddot{q_2}$ = %6.3f; true = %6.3f' %(actions[frame,5], accelerations[frame,5]))
+            
+            # Update the reward text
+            reward_text.set_text('Total reward = %.1f' %cumulative_reward_log[frame])
+            
+            # Update the time text
+            time_text.set_text('Time = %.1f s' %(frame*temp_env.TIMESTEP))
+        except:
+            print("Out of bounds on the action")
 
-        # Update the reward text
-        reward_text.set_text('Total reward = %.1f' %cumulative_reward_log[frame])
+        
 
         if extra_information:
             # Updating the instantaneous reward bar graph
