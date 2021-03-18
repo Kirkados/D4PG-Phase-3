@@ -271,7 +271,7 @@ class Environment:
         self.GIVE_MID_WAY_REWARD              = True # Whether or not to give a reward mid-way towards the docking port to encourage the learning to move in the proper direction
         self.MID_WAY_REWARD_RADIUS            = 0.1 # [ms] the radius from the DOCKING_PORT_MOUNT_POSITION that the mid-way reward is given
         self.MID_WAY_REWARD                   = 25 # The value of the mid-way reward
-        self.ANGULAR_MOMENTUM_PENALTY         = 50 # Max angular momentum penalty to give...
+        self.ANGULAR_MOMENTUM_PENALTY         = 0 # Max angular momentum penalty to give...
         self.AT_MAX_ANGULAR_MOMENTUM          = 2 # [kg m^2/s] which is given at this angular momentum
         
         
