@@ -180,7 +180,7 @@ class Environment:
         self.PREDETERMINED_ACTION             = np.array([-0.02,0.02,0,0.1,-0.05,0.1])
         self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
-        self.MAX_NUMBER_OF_TIMESTEPS          = 300#150# per episode
+        self.MAX_NUMBER_OF_TIMESTEPS          = 300# per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?        
         self.KI                               = [17.0,17.0,0.295,0.02,0.0036,0.00008] # Integral gains for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
@@ -192,12 +192,12 @@ class Environment:
         self.MASS     = 16.9478# [kg] for chaser
         self.M1       = 0.3377 # [kg] link mass
         self.M2       = 0.3281 # [kg] link mass
-        self.M3       = 0.0111 # [kg] link mass        
+        self.M3_original       = 0.0111 # [kg] link mass        
         self.A1       = 0.1933 # [m] base of link to centre of mass
         self.B1       = 0.1117 # [m] centre of mass to end of link
         self.A2       = 0.1993 # [m] base of link to centre of mass
         self.B2       = 0.1057 # [m] centre of mass to end of link
-        self.A3       = 0.0621 # [m] base of link to centre of mass
+        self.A3_original       = 0.0621 # [m] base of link to centre of mass
         self.B3       = 0.0159 # [m] centre of mass to end of link
         #self.INERTIA  = 1/12*self.MASS*(self.LENGTH**2 + self.LENGTH**2) # 0.15 [kg m^2] base inertia
         self.INERTIA = 2.873E-1 # [kg m^2] from Crain and Ulrich
@@ -206,7 +206,7 @@ class Environment:
         #self.INERTIA2 = 1/12*self.M2*(self.A2 + self.B2)**2 # [kg m^2] link inertia
         self.INERTIA2 = 3.413E-3 # [kg m^2] from Crain and Ulrich
         #self.INERTIA3 = 1/12*self.M3*(self.A3 + self.B3)**2 # [kg m^2] link inertia        
-        self.INERTIA3 = 5.640E-5 # [kg m^2] from Crain and Ulrich
+        self.INERTIA3_original = 5.640E-5 # [kg m^2] from Crain and Ulrich
         
         # Target Physical Properties
         self.TARGET_MASS = 12.3341 # [kg]
@@ -214,11 +214,11 @@ class Environment:
         
         # print("** Artificially boosting the chaser mass and inertia for unit testing purposes line 209")
         # self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.0, 0.0]) # [m, m, rad]
-        # self.INITIAL_CHASER_VELOCITY          = np.array([-0.5, 0.1, -.1]) # [m/s, m/s, rad/s]
-        # self.INITIAL_ARM_ANGLES               = np.array([0, 0.0, 0.0]) # [rad, rad, rad]
-        # self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
-        # self.INITIAL_TARGET_POSITION          = np.array([1.0, 5.0, 0.0]) # [m, m, rad]
-        # self.INITIAL_TARGET_VELOCITY          = np.array([-0.0, 0.0, 0.1]) # [m/s, m/s, rad/s]
+        # self.INITIAL_CHASER_VELOCITY          = np.array([0.1, 0.0, -0.1]) # [m/s, m/s, rad/s]
+        # self.INITIAL_ARM_ANGLES               = np.array([0.0, 0.0, 0.0]) # [rad, rad, rad]
+        # self.INITIAL_ARM_RATES                = np.array([0.1, 0.1, 0.0]) # [rad/s, rad/s, rad/s]
+        # self.INITIAL_TARGET_POSITION          = np.array([1.16, 2.14, np.pi]) # [m, m, rad]
+        # self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
         # self.MASS = 1
         # self.TARGET_MASS = 1
         # self.TARGET_INERTIA = 1
@@ -272,7 +272,7 @@ class Environment:
         self.MID_WAY_REWARD_RADIUS            = 0.1 # [ms] the radius from the DOCKING_PORT_MOUNT_POSITION that the mid-way reward is given
         self.MID_WAY_REWARD                   = 25 # The value of the mid-way reward
         self.ANGULAR_MOMENTUM_PENALTY         = 50 # Max angular momentum penalty to give...
-        self.AT_MAX_ANGULAR_MOMENTUM          = 15 # [kg m^2/s] which is given at this angular momentum
+        self.AT_MAX_ANGULAR_MOMENTUM          = 2 # [kg m^2/s] which is given at this angular momentum
         
         
         # Some calculations that don't need to be changed
@@ -295,8 +295,19 @@ class Environment:
         # Reset the seed for max randomness
         np.random.seed()
         
+        # Reset the third link to its original (undocked) mass properties
+        self.M3 = self.M3_original
+        self.A3 = self.A3_original
+        self.INERTIA3 = self.INERTIA3_original
+        self.MAX_JOINT1n2_TORQUE              = 0.02 # [Nm] # Limited by the simulator NOT EXPERIMENT
+        self.MAX_JOINT3_TORQUE                = 0.0002 # [Nm] Limited by the simulator NOT EXPERIMENT
+        self.first_timestep_postcapture = True
+                
         # Resetting the time
         self.time = 0.
+        
+        # Enabling the extra printing
+        self.extra_printing = True
 
         # Logging whether it is test time for this episode
         self.test_time = test_time
@@ -1090,13 +1101,13 @@ class Environment:
 
         # If we've fallen off the table or spun too many times, end the episode
         if not(self.chaser_on_table) or np.abs(self.chaser_position[-1]) > 6*np.pi:
-            if self.test_time:
+            if self.test_time and self.extra_printing:
                 print("Fell off table!")
             return True
 
         # If we want to end the episode during a collision
         if self.END_ON_COLLISION and np.any([self.end_effector_collision, self.forbidden_area_collision, self.chaser_target_collision, self.elbow_target_collision]):
-            if self.test_time:
+            if self.test_time and self.extra_printing:
                 print("Ending episode due to a collision")
             return True
         
@@ -1164,9 +1175,49 @@ class Environment:
                 # The episode has completed, now simulate a few more frames until the arm comes to rest
                 # Unfortunately, the dynamics have changed. The third manipulator link should now absorb the target's mass and inertia. I believe I can overwrite this here
                 
+                # Change the third link mass properties to its docked form
+                self.M3 = self.M3_original + self.TARGET_MASS
+                self.A3 = (self.M3_original*self.A3_original + self.TARGET_MASS*(self.A3_original + self.B3 + self.DOCKING_PORT_MOUNT_POSITION[1]))/(self.M3_original + self.TARGET_MASS)
+                self.INERTIA3 = self.INERTIA3_original + self.M3_original*np.abs(self.A3_original - self.A3)**2 + self.TARGET_INERTIA + self.TARGET_MASS*(self.A3_original + self.B3 + self.DOCKING_PORT_MOUNT_POSITION[1] - self.A3)**2
+                
+                # Set the link 3 angular velocity equal to the target's
+                if self.first_timestep_postcapture:                        
+                    link3_angular_rate_inertial = self.target_velocity[-1]
+                    link3_angular_rate_body = link3_angular_rate_inertial - self.chaser_velocity[-1] - self.arm_angular_rates[0] - self.arm_angular_rates[1]
+                    self.arm_angular_rates[-1] = link3_angular_rate_body
+                    self.previous_velocity = np.concatenate([self.chaser_velocity, self.arm_angular_rates]) 
+                    self.first_timestep_postcapture = False
+                
                 # Commanding an acceleration to slow down the arm
-                action = np.concatenate([np.zeros(3), -self.arm_angular_rates/2])
+                action = np.concatenate([np.zeros(3), -self.arm_angular_rates/3])
+                self.MAX_JOINT1n2_TORQUE = 0.02
+                self.MAX_JOINT3_TORQUE = 0.1
                 _, _ = self.step(action)
+                
+                # Force the target to be attached to the end-effector
+                x, y, theta                           = self.chaser_position
+                theta_1, theta_2, theta_3             = self.arm_angles
+        
+                x_ee = x + self.B0*np.cos(self.PHI + theta) + (self.A1 + self.B1)*np.cos(np.pi/2 + theta + theta_1) + \
+                       (self.A2 + self.B2)*np.cos(np.pi/2 + theta + theta_1 + theta_2) + \
+                       (self.A3_original + self.B3)*np.cos(np.pi/2 + theta + theta_1 + theta_2 + theta_3)                                   
+                y_ee = y + self.B0*np.sin(self.PHI + theta) + (self.A1 + self.B1)*np.sin(np.pi/2 + theta + theta_1) + \
+                       (self.A2 + self.B2)*np.sin(np.pi/2 + theta + theta_1 + theta_2) + \
+                       (self.A3_original + self.B3)*np.sin(np.pi/2 + theta + theta_1 + theta_2 + theta_3)
+                
+                ##########################
+                ## Docking port Section ##
+                ##########################
+                # Make rotation matrix
+                C_Ib_ee = self.make_C_bI(self.chaser_position[-1] + np.sum(self.arm_angles)).T
+                
+                # Position in Inertial = Body position (inertial) + C_Ib * EE position in body
+                docking_port_position_wrt_ee_inertial = np.matmul(C_Ib_ee, self.DOCKING_PORT_MOUNT_POSITION)
+                
+                # Updates the position of the end-effector in the Inertial frame
+                end_effector_position_inertial = np.array([x_ee, y_ee])
+                self.target_position[:-1] = end_effector_position_inertial + docking_port_position_wrt_ee_inertial
+                self.target_position[-1] = self.chaser_position[-1] + np.sum(self.arm_angles) + np.pi
                 
                 # Disabling some of the success messages at this time
                 self.extra_printing = False
@@ -1182,8 +1233,7 @@ class Environment:
                 self.env_to_agent.put((self.make_total_state(), 0, done2))
 
             else:
-                # Enabling the extra printing
-                self.extra_printing = True
+                
                 # Delay the action by DYNAMICS_DELAY timesteps. The environment accumulates the action delay--the agent still thinks the sent action was used.
                 if self.DYNAMICS_DELAY > 0:
                     self.action_delay_queue.put(action,False) # puts the current action to the bottom of the stack
@@ -1546,7 +1596,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     B1     = temp_env.B1
     A2     = temp_env.A2
     B2     = temp_env.B2
-    A3     = temp_env.A3
+    A3     = temp_env.A3_original
     B3     = temp_env.B3
     DOCKING_PORT_MOUNT_POSITION = temp_env.DOCKING_PORT_MOUNT_POSITION
     DOCKING_PORT_CORNER1_POSITION = temp_env.DOCKING_PORT_CORNER1_POSITION

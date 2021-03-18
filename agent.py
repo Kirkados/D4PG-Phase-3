@@ -331,7 +331,7 @@ class Agent:
                 done2 = False
                 counter = 0
                 # Until the environment says we're done again
-                while (not done2) and (counter < 100):
+                while (not done2) and (counter < 200):
                     # Sending a False to the environment tells it to slow down the arm
                     self.agent_to_env.put((False,))
     
