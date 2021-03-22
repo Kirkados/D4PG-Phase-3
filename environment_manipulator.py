@@ -258,8 +258,8 @@ class Environment:
         self.DOCKING_REWARD                   = 100 # A lump-sum given to the chaser when it docks
         self.SUCCESSFUL_DOCKING_RADIUS        = 0.04 # [m] distance at which the magnetic docking can occur
         self.MAX_DOCKING_ANGLE_PENALTY        = 50 # A penalty given to the chaser, upon docking, for having an angle when docking. The penalty is 0 upon perfect docking and MAX_DOCKING_ANGLE_PENALTY upon perfectly bad docking
-        self.DOCKING_EE_VELOCITY_PENALTY      = 50 # A penalty given to the chaser, upon docking, for every 1 m/s end-effector collision velocity upon docking
-        self.DOCKING_ANGULAR_VELOCITY_PENALTY = 25 # A penalty given to the chaser, upon docking, for every 1 rad/s angular body velocity upon docking
+        self.DOCKING_EE_VELOCITY_PENALTY      = 0#50 # A penalty given to the chaser, upon docking, for every 1 m/s end-effector collision velocity upon docking
+        self.DOCKING_ANGULAR_VELOCITY_PENALTY = 0#25 # A penalty given to the chaser, upon docking, for every 1 rad/s angular body velocity upon docking
         self.END_ON_FALL                      = True # end episode on a fall off the table        
         self.FALL_OFF_TABLE_PENALTY           = 100.
         self.CHECK_CHASER_TARGET_COLLISION    = True
@@ -271,7 +271,7 @@ class Environment:
         self.GIVE_MID_WAY_REWARD              = True # Whether or not to give a reward mid-way towards the docking port to encourage the learning to move in the proper direction
         self.MID_WAY_REWARD_RADIUS            = 0.1 # [ms] the radius from the DOCKING_PORT_MOUNT_POSITION that the mid-way reward is given
         self.MID_WAY_REWARD                   = 25 # The value of the mid-way reward
-        self.ANGULAR_MOMENTUM_PENALTY         = 0 # Max angular momentum penalty to give...
+        self.ANGULAR_MOMENTUM_PENALTY         = 50 # Max angular momentum penalty to give...
         self.AT_MAX_ANGULAR_MOMENTUM          = 2 # [kg m^2/s] which is given at this angular momentum
         
         
