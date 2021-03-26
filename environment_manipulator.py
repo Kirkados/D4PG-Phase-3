@@ -275,7 +275,7 @@ class Environment:
         self.ANGULAR_MOMENTUM_PENALTY         = 50 # Max angular momentum penalty to give...
         self.AT_MAX_ANGULAR_MOMENTUM          = 2 # [kg m^2/s] which is given at this angular momentum
         self.END_ON_ARM_LIMITS                = True # Whether or not to end the episode when an arm link reaches its limit
-        self.ARM_LIMIT_PENALTY                = 0 #[rewards/timestep/link] Penalty for manipulator joints reaching their limits
+        self.ARM_LIMIT_PENALTY                = 5 #[rewards/timestep/link] Penalty for manipulator joints reaching their limits
         
         
         # Some calculations that don't need to be changed
