@@ -15,7 +15,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'TESTING_POSTCAPTURE_OMEGA_10TIMESTEPS_1AGENT_1EPISODE_NORANDOM_no_collision_velocity_penalty_rcdc'
+    RUN_NAME               = 'TESTING_POSTCAPTURE_OMEGA_10TIMESTEPS_1AGENT_1EPISODE_NORANDOM_CALIBRATETIMESTEP_no_collision_velocity_penalty_rcdc'
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
     ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment

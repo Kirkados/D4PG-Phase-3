@@ -175,9 +175,9 @@ class Environment:
         self.N_STEP_RETURN                    =   5
         self.DISCOUNT_FACTOR                  = 0.95**(1/self.N_STEP_RETURN)
         self.TIMESTEP                         = 0.2 # [s]
-        self.CALIBRATE_TIMESTEP               = False # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
+        self.CALIBRATE_TIMESTEP               = True # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
         self.CLIP_DURING_CALIBRATION          = True # Whether or not to clip the control forces during calibration
-        self.PREDETERMINED_ACTION             = np.array([-0.02,0.02,0,0.1,-0.05,0.1])
+        self.PREDETERMINED_ACTION             = np.array([0,0,0,0,0,0])
         self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
         self.MAX_NUMBER_OF_TIMESTEPS          = 10#300# per episode
@@ -214,8 +214,9 @@ class Environment:
         
         # print("** Artificially boosting the chaser mass and inertia for unit testing purposes line 209")
         # self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.0, 0.0]) # [m, m, rad]
+        # self.INITIAL_CHASER_POSITION          = np.array([1.5, 1.0, 0.0]) # [m, m, rad]
         # self.INITIAL_CHASER_VELOCITY          = np.array([-0.01225, 0.0, -0.2]) # [m/s, m/s, rad/s]
-        # self.INITIAL_ARM_ANGLES               = np.array([0.0, 0.0, 0.0]) # [rad, rad, rad]
+        # self.INITIAL_ARM_ANGLES               = np.array([np.pi/1.9, -np.pi/1.9, 0.0]) # [rad, rad, rad]
         # self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
         # self.INITIAL_TARGET_POSITION          = np.array([1.16, 2.14, np.pi]) # [m, m, rad]
         # self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, np.pi/7]) # [m/s, m/s, rad/s]
@@ -273,6 +274,8 @@ class Environment:
         self.MID_WAY_REWARD                   = 25 # The value of the mid-way reward
         self.ANGULAR_MOMENTUM_PENALTY         = 50 # Max angular momentum penalty to give...
         self.AT_MAX_ANGULAR_MOMENTUM          = 2 # [kg m^2/s] which is given at this angular momentum
+        self.END_ON_ARM_LIMITS                = True # Whether or not to end the episode when an arm link reaches its limit
+        self.ARM_LIMIT_PENALTY                = 5 #[rewards/timestep/link] Penalty for manipulator joints reaching their limits
         
         
         # Some calculations that don't need to be changed
@@ -987,6 +990,10 @@ class Environment:
         if self.elbow_target_collision:
             reward -= self.END_EFFECTOR_COLLISION_PENALTY
         
+        # Give a penalty when an arm segment reaches its limit
+        if np.any(self.joints_past_limits):
+            reward -= self.ARM_LIMIT_PENALTY*np.sum(self.joints_past_limits)            
+        
         # If we've fallen off the table or rotated too much, penalize this behaviour
         if not(self.chaser_on_table) or np.abs(self.chaser_position[-1]) > 6*np.pi:
             reward -= self.FALL_OFF_TABLE_PENALTY
@@ -1122,6 +1129,12 @@ class Environment:
         if self.END_ON_COLLISION and np.any([self.end_effector_collision, self.forbidden_area_collision, self.chaser_target_collision, self.elbow_target_collision]):
             if self.test_time and self.extra_printing:
                 print("Ending episode due to a collision")
+            return True
+        
+        # If we want to end when an arm segment reaches its limit
+        if self.END_ON_ARM_LIMITS and np.any(self.joints_past_limits):
+            if self.test_time and self.extra_printing:
+                print("Ending episode due to arm limits being reached")
             return True
         
         # If we've run out of timesteps
