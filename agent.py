@@ -325,27 +325,27 @@ class Agent:
                             done_log.append(done)
                             discount_factor_log.append(discount_factor)
                     
-            # We are done the episode! If we want to render this one, continue animating until the arm comes to rest #
-            if (reward > 0) and (self.n_agent == 1 and Settings.RECORD_VIDEO and (episode_number % (Settings.CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES*Settings.VIDEO_RECORD_FREQUENCY) == 0 or episode_number == 1)):
-                # Continue to step the environment and logging data. Do not place this data in the replay buffer. Only store the raw_total_state
-                done2 = False
-                counter = 0
-                # Until the environment says we're done again
-                while (not done2) and (counter < 200):
-                    # Sending a False to the environment tells it to slow down the arm
-                    self.agent_to_env.put((False,))
+            # # We are done the episode! If we want to render this one, continue animating until the arm comes to rest #
+            # if (reward > 0) and (self.n_agent == 1 and Settings.RECORD_VIDEO and (episode_number % (Settings.CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES*Settings.VIDEO_RECORD_FREQUENCY) == 0 or episode_number == 1)):
+            #     # Continue to step the environment and logging data. Do not place this data in the replay buffer. Only store the raw_total_state
+            #     done2 = False
+            #     counter = 0
+            #     # Until the environment says we're done again
+            #     while (not done2) and (counter < 200):
+            #         # Sending a False to the environment tells it to slow down the arm
+            #         self.agent_to_env.put((False,))
     
-                    # Receive results from stepped environment
-                    next_total_state, _, done2 = self.env_to_agent.get() # The * means the variable will be unpacked only if it exists
+            #         # Receive results from stepped environment
+            #         next_total_state, _, done2 = self.env_to_agent.get() # The * means the variable will be unpacked only if it exists
                     
-                    # Augment total_state with past actions, if appropriate
-                    if Settings.AUGMENT_STATE_WITH_ACTION_LENGTH > 0:
-                        next_total_state = self.augment_state_with_actions(next_total_state)
+            #         # Augment total_state with past actions, if appropriate
+            #         if Settings.AUGMENT_STATE_WITH_ACTION_LENGTH > 0:
+            #             next_total_state = self.augment_state_with_actions(next_total_state)
                     
-                    # Log the state so it can be animated
-                    raw_total_state_log.append(next_total_state)
+            #         # Log the state so it can be animated
+            #         raw_total_state_log.append(next_total_state)
                     
-                    counter += 1
+            #         counter += 1
 
             ################################
             ####### Episode Complete #######
