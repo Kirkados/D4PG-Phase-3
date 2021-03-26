@@ -256,26 +256,28 @@ class Environment:
         
         
         # Reward function properties
-        self.DOCKING_REWARD                   = 100 # A lump-sum given to the chaser when it docks
-        self.SUCCESSFUL_DOCKING_RADIUS        = 0.04 # [m] distance at which the magnetic docking can occur
-        self.MAX_DOCKING_ANGLE_PENALTY        = 50 # A penalty given to the chaser, upon docking, for having an angle when docking. The penalty is 0 upon perfect docking and MAX_DOCKING_ANGLE_PENALTY upon perfectly bad docking
-        self.DOCKING_EE_VELOCITY_PENALTY      = 50 # A penalty given to the chaser, upon docking, for every 1 m/s end-effector collision velocity upon docking
-        self.DOCKING_ANGULAR_VELOCITY_PENALTY = 25 # A penalty given to the chaser, upon docking, for every 1 rad/s angular body velocity upon docking
-        self.END_ON_FALL                      = True # end episode on a fall off the table        
-        self.FALL_OFF_TABLE_PENALTY           = 100.
-        self.CHECK_CHASER_TARGET_COLLISION    = True
-        self.TARGET_COLLISION_PENALTY         = 0 # [rewards/timestep] penalty given for colliding with target  
-        self.CHECK_END_EFFECTOR_COLLISION     = True # Whether to do collision detection on the end-effector
-        self.CHECK_END_EFFECTOR_FORBIDDEN     = True # Whether to expand the collision area to include the forbidden zone
-        self.END_EFFECTOR_COLLISION_PENALTY   = 0 # [rewards/timestep] Penalty for end-effector collisions (with target or optionally with the forbidden zone)
-        self.END_ON_COLLISION                 = True # Whether to end the episode upon a collision.
-        self.GIVE_MID_WAY_REWARD              = True # Whether or not to give a reward mid-way towards the docking port to encourage the learning to move in the proper direction
-        self.MID_WAY_REWARD_RADIUS            = 0.1 # [ms] the radius from the DOCKING_PORT_MOUNT_POSITION that the mid-way reward is given
-        self.MID_WAY_REWARD                   = 25 # The value of the mid-way reward
-        self.ANGULAR_MOMENTUM_PENALTY         = 50 # Max angular momentum penalty to give...
-        self.AT_MAX_ANGULAR_MOMENTUM          = 2 # [kg m^2/s] which is given at this angular momentum
-        self.END_ON_ARM_LIMITS                = False # Whether or not to end the episode when an arm link reaches its limit
-        self.ARM_LIMIT_PENALTY                = 5 #[rewards/timestep/link] Penalty for manipulator joints reaching their limits
+        self.DOCKING_REWARD                        = 100 # A lump-sum given to the chaser when it docks
+        self.SUCCESSFUL_DOCKING_RADIUS             = 0.04 # [m] distance at which the magnetic docking can occur
+        self.MAX_DOCKING_ANGLE_PENALTY             = 50 # A penalty given to the chaser, upon docking, for having an angle when docking. The penalty is 0 upon perfect docking and MAX_DOCKING_ANGLE_PENALTY upon perfectly bad docking
+        self.DOCKING_EE_VELOCITY_PENALTY           = 50 # A penalty given to the chaser, upon docking, for every 1 m/s end-effector collision velocity upon docking
+        self.ALLOWED_EE_COLLISION_VELOCITY         = 0.2 # [m/s] the end-effector is not penalized if it collides with the docking port at up to this speed.
+        self.DOCKING_ANGULAR_VELOCITY_PENALTY      = 25 # A penalty given to the chaser, upon docking, for every 1 rad/s angular body velocity upon docking
+        self.ALLOWED_EE_COLLISION_ANGULAR_VELOCITY = np.pi/6 # [rad/s] the end-effector is not penalized if it collides with the docking port at up to this angular velocity.
+        self.END_ON_FALL                           = True # end episode on a fall off the table        
+        self.FALL_OFF_TABLE_PENALTY                = 100.
+        self.CHECK_CHASER_TARGET_COLLISION         = True
+        self.TARGET_COLLISION_PENALTY              = 0 # [rewards/timestep] penalty given for colliding with target  
+        self.CHECK_END_EFFECTOR_COLLISION          = True # Whether to do collision detection on the end-effector
+        self.CHECK_END_EFFECTOR_FORBIDDEN          = True # Whether to expand the collision area to include the forbidden zone
+        self.END_EFFECTOR_COLLISION_PENALTY        = 0 # [rewards/timestep] Penalty for end-effector collisions (with target or optionally with the forbidden zone)
+        self.END_ON_COLLISION                      = True # Whether to end the episode upon a collision.
+        self.GIVE_MID_WAY_REWARD                   = True # Whether or not to give a reward mid-way towards the docking port to encourage the learning to move in the proper direction
+        self.MID_WAY_REWARD_RADIUS                 = 0.1 # [ms] the radius from the DOCKING_PORT_MOUNT_POSITION that the mid-way reward is given
+        self.MID_WAY_REWARD                        = 25 # The value of the mid-way reward
+        self.ANGULAR_MOMENTUM_PENALTY              = 50 # Max angular momentum penalty to give...
+        self.AT_MAX_ANGULAR_MOMENTUM               = 2 # [kg m^2/s] which is given at this angular momentum
+        self.END_ON_ARM_LIMITS                     = False # Whether or not to end the episode when an arm link reaches its limit
+        self.ARM_LIMIT_PENALTY                     = 0 #[rewards/timestep/link] Penalty for manipulator joints reaching their limits
         
         
         # Some calculations that don't need to be changed
@@ -822,11 +824,11 @@ class Environment:
             docking_relative_velocity = self.end_effector_velocity - self.docking_port_velocity
             
             # Applying the penalty
-            reward -= np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY # 
+            reward -= np.maximum(0, np.linalg.norm(docking_relative_velocity) - self.ALLOWED_EE_COLLISION_VELOCITY) * self.DOCKING_EE_VELOCITY_PENALTY # 
             
             # Penalize for relative end-effector angular velocity upon docking
             end_effector_angular_velocity = self.chaser_velocity[-1] + np.sum(self.arm_angular_rates)
-            reward -= np.abs(end_effector_angular_velocity - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY
+            reward -= np.maximum(0, np.abs(end_effector_angular_velocity - self.target_velocity[-1]) - self.ALLOWED_EE_COLLISION_ANGULAR_VELOCITY) * self.DOCKING_ANGULAR_VELOCITY_PENALTY
             
             
             
@@ -968,7 +970,7 @@ class Environment:
             
             
             if self.test_time:
-                print("Docking successful! Reward given: %.1f; distance: %.3f m -> Relative ee velocity: %.3f m/s; penalty: %.1f -> Docking angle error: %.2f deg; penalty: %.1f -> EE angular rate error: %.3f; penalty %.1f -> Combined angular momentum: %.3f Nms; penalty: %.1f, Combined inertia at capture: %.2f kgm^2, Postcapture angular rate %.2f deg/s; Precapture target angular rate: %.2f deg/s" %(reward, np.linalg.norm(self.end_effector_position - self.docking_port_position), np.linalg.norm(docking_relative_velocity), np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY, docking_angle_error*180/np.pi, np.abs(np.sin(docking_angle_error/2)) * self.MAX_DOCKING_ANGLE_PENALTY,np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]),np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY, h_total_combined_com, self.ANGULAR_MOMENTUM_PENALTY*np.abs(h_total_combined_com)/self.AT_MAX_ANGULAR_MOMENTUM, total_inertia, combined_angular_velocity, self.target_velocity[-1]*180/np.pi))
+                print("Docking successful! Reward given: %.1f; distance: %.3f m -> Relative ee velocity: %.3f m/s; penalty: %.1f -> Docking angle error: %.2f deg; penalty: %.1f -> EE angular rate error: %.3f; penalty %.1f -> Combined angular momentum: %.3f Nms; penalty: %.1f, Combined inertia at capture: %.2f kgm^2, Postcapture angular rate %.2f deg/s; Precapture target angular rate: %.2f deg/s" %(reward, np.linalg.norm(self.end_effector_position - self.docking_port_position), np.linalg.norm(docking_relative_velocity), np.maximum(0, np.linalg.norm(docking_relative_velocity) - self.ALLOWED_EE_COLLISION_VELOCITY) * self.DOCKING_EE_VELOCITY_PENALTY, docking_angle_error*180/np.pi, np.abs(np.sin(docking_angle_error/2)) * self.MAX_DOCKING_ANGLE_PENALTY,np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]),np.maximum(0, np.abs(end_effector_angular_velocity - self.target_velocity[-1]) - self.ALLOWED_EE_COLLISION_ANGULAR_VELOCITY) * self.DOCKING_ANGULAR_VELOCITY_PENALTY, h_total_combined_com, self.ANGULAR_MOMENTUM_PENALTY*np.abs(h_total_combined_com)/self.AT_MAX_ANGULAR_MOMENTUM, total_inertia, combined_angular_velocity, self.target_velocity[-1]*180/np.pi))
         
         # Give a reward for passing a "mid-way" mark
         if self.GIVE_MID_WAY_REWARD and self.not_yet_mid_way and self.mid_way:
