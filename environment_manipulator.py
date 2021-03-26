@@ -947,12 +947,25 @@ class Environment:
             #p_total_post_capture = total_linear_momentum_chaser + linear_momentum_target
             #print("Total combined linear momentum: ", p_total_post_capture)
             
+            ##########################################################################################################################
+            ### Calculate total inertial of the combined system about the chaser-manipulator-target centre of mass (for curiosity) ###
+            ##########################################################################################################################
+            # A bunch of parallel axis theorems
+            total_inertia = self.INERTIA + self.MASS * np.linalg.norm(self.chaser_position[:-1] - combined_com)**2 + \
+                            self.INERTIA1 + self.M1  * np.linalg.norm(link1_com - combined_com)**2 + \
+                            self.INERTIA2 + self.M2  * np.linalg.norm(link2_com - combined_com)**2 + \
+                            self.INERTIA3 + self.M3  * np.linalg.norm(link3_com - combined_com)**2 + \
+                            self.TARGET_INERTIA + self.TARGET_MASS * np.linalg.norm(self.target_position[:-1] - combined_com)**2
+            # And the effective postcapture angular velocity of the system (assuming all joints become rigid in the capture position)
+            # If the moment of inertia changes, this will change.
+            combined_angular_velocity = h_total_combined_com/total_inertia*180/np.pi
+            
             # Add the penalty
             reward -= self.ANGULAR_MOMENTUM_PENALTY*np.abs(h_total_combined_com)/self.AT_MAX_ANGULAR_MOMENTUM
             
             
             if self.test_time:
-                print("Docking successful! Reward given: %.1f; distance: %.3f m -> Relative ee velocity: %.3f m/s; penalty: %.1f -> Docking angle error: %.2f deg; penalty: %.1f -> EE angular rate error: %.3f; penalty %.1f -> Combined angular momentum: %.3f Nms; penalty: %.1f" %(reward, np.linalg.norm(self.end_effector_position - self.docking_port_position), np.linalg.norm(docking_relative_velocity), np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY, docking_angle_error*180/np.pi, np.abs(np.sin(docking_angle_error/2)) * self.MAX_DOCKING_ANGLE_PENALTY,np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]),np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY, h_total_combined_com, self.ANGULAR_MOMENTUM_PENALTY*np.abs(h_total_combined_com)/self.AT_MAX_ANGULAR_MOMENTUM))
+                print("Docking successful! Reward given: %.1f; distance: %.3f m -> Relative ee velocity: %.3f m/s; penalty: %.1f -> Docking angle error: %.2f deg; penalty: %.1f -> EE angular rate error: %.3f; penalty %.1f -> Combined angular momentum: %.3f Nms; penalty: %.1f, Combined inertia at capture: %.2f kgm^2, Postcapture angular rate %.1f deg/s" %(reward, np.linalg.norm(self.end_effector_position - self.docking_port_position), np.linalg.norm(docking_relative_velocity), np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY, docking_angle_error*180/np.pi, np.abs(np.sin(docking_angle_error/2)) * self.MAX_DOCKING_ANGLE_PENALTY,np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]),np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY, h_total_combined_com, self.ANGULAR_MOMENTUM_PENALTY*np.abs(h_total_combined_com)/self.AT_MAX_ANGULAR_MOMENTUM, total_inertia, combined_angular_velocity))
         
         # Give a reward for passing a "mid-way" mark
         if self.GIVE_MID_WAY_REWARD and self.not_yet_mid_way and self.mid_way:
