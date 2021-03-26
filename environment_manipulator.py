@@ -158,7 +158,7 @@ class Environment:
         self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION*2/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
-        self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
+        self.RANDOMIZE_INITIAL_CONDITIONS     = False # whether or not to randomize the initial conditions
         self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
         #self.RANDOMIZATION_POSITION           = 0.5 # [m] half-range uniform randomization position """Replaced with individual randomizations in X and Y"""
         self.RANDOMIZATION_LENGTH_X           = 0.5#3.5/2-0.2 # [m] half-range uniform randomization X position
@@ -180,7 +180,7 @@ class Environment:
         self.PREDETERMINED_ACTION             = np.array([-0.02,0.02,0,0.1,-0.05,0.1])
         self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
-        self.MAX_NUMBER_OF_TIMESTEPS          = 300# per episode
+        self.MAX_NUMBER_OF_TIMESTEPS          = 10#300# per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?        
         self.KI                               = [17.0,17.0,0.295,0.02,0.0036,0.00008] # Integral gains for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
@@ -214,11 +214,11 @@ class Environment:
         
         # print("** Artificially boosting the chaser mass and inertia for unit testing purposes line 209")
         # self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.0, 0.0]) # [m, m, rad]
-        # self.INITIAL_CHASER_VELOCITY          = np.array([0.1, 0.0, -0.1]) # [m/s, m/s, rad/s]
+        # self.INITIAL_CHASER_VELOCITY          = np.array([-0.01225, 0.0, -0.2]) # [m/s, m/s, rad/s]
         # self.INITIAL_ARM_ANGLES               = np.array([0.0, 0.0, 0.0]) # [rad, rad, rad]
-        # self.INITIAL_ARM_RATES                = np.array([0.1, 0.1, 0.0]) # [rad/s, rad/s, rad/s]
+        # self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
         # self.INITIAL_TARGET_POSITION          = np.array([1.16, 2.14, np.pi]) # [m, m, rad]
-        # self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, 0.0]) # [m/s, m/s, rad/s]
+        # self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, np.pi/7]) # [m/s, m/s, rad/s]
         # self.MASS = 1
         # self.TARGET_MASS = 1
         # self.TARGET_INERTIA = 1
@@ -965,7 +965,7 @@ class Environment:
             
             
             if self.test_time:
-                print("Docking successful! Reward given: %.1f; distance: %.3f m -> Relative ee velocity: %.3f m/s; penalty: %.1f -> Docking angle error: %.2f deg; penalty: %.1f -> EE angular rate error: %.3f; penalty %.1f -> Combined angular momentum: %.3f Nms; penalty: %.1f, Combined inertia at capture: %.2f kgm^2, Postcapture angular rate %.1f deg/s" %(reward, np.linalg.norm(self.end_effector_position - self.docking_port_position), np.linalg.norm(docking_relative_velocity), np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY, docking_angle_error*180/np.pi, np.abs(np.sin(docking_angle_error/2)) * self.MAX_DOCKING_ANGLE_PENALTY,np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]),np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY, h_total_combined_com, self.ANGULAR_MOMENTUM_PENALTY*np.abs(h_total_combined_com)/self.AT_MAX_ANGULAR_MOMENTUM, total_inertia, combined_angular_velocity))
+                print("Docking successful! Reward given: %.1f; distance: %.3f m -> Relative ee velocity: %.3f m/s; penalty: %.1f -> Docking angle error: %.2f deg; penalty: %.1f -> EE angular rate error: %.3f; penalty %.1f -> Combined angular momentum: %.3f Nms; penalty: %.1f, Combined inertia at capture: %.2f kgm^2, Postcapture angular rate %.2f deg/s; Precapture target angular rate: %.2f deg/s" %(reward, np.linalg.norm(self.end_effector_position - self.docking_port_position), np.linalg.norm(docking_relative_velocity), np.linalg.norm(docking_relative_velocity) * self.DOCKING_EE_VELOCITY_PENALTY, docking_angle_error*180/np.pi, np.abs(np.sin(docking_angle_error/2)) * self.MAX_DOCKING_ANGLE_PENALTY,np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]),np.abs(self.chaser_velocity[-1] - self.target_velocity[-1]) * self.DOCKING_ANGULAR_VELOCITY_PENALTY, h_total_combined_com, self.ANGULAR_MOMENTUM_PENALTY*np.abs(h_total_combined_com)/self.AT_MAX_ANGULAR_MOMENTUM, total_inertia, combined_angular_velocity, self.target_velocity[-1]*180/np.pi))
         
         # Give a reward for passing a "mid-way" mark
         if self.GIVE_MID_WAY_REWARD and self.not_yet_mid_way and self.mid_way:
