@@ -158,7 +158,7 @@ class Environment:
         self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION*2/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
-        self.RANDOMIZE_INITIAL_CONDITIONS     = False # whether or not to randomize the initial conditions
+        self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
         self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
         #self.RANDOMIZATION_POSITION           = 0.5 # [m] half-range uniform randomization position """Replaced with individual randomizations in X and Y"""
         self.RANDOMIZATION_LENGTH_X           = 0.5#3.5/2-0.2 # [m] half-range uniform randomization X position
@@ -175,12 +175,12 @@ class Environment:
         self.N_STEP_RETURN                    =   5
         self.DISCOUNT_FACTOR                  = 0.95**(1/self.N_STEP_RETURN)
         self.TIMESTEP                         = 0.2 # [s]
-        self.CALIBRATE_TIMESTEP               = True # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
+        self.CALIBRATE_TIMESTEP               = False # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
         self.CLIP_DURING_CALIBRATION          = True # Whether or not to clip the control forces during calibration
         self.PREDETERMINED_ACTION             = np.array([0,0,0,0,0,0])
         self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
-        self.MAX_NUMBER_OF_TIMESTEPS          = 10#300# per episode
+        self.MAX_NUMBER_OF_TIMESTEPS          = 300# per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?        
         self.KI                               = [17.0,17.0,0.295,0.02,0.0036,0.00008] # Integral gains for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
@@ -259,8 +259,8 @@ class Environment:
         self.DOCKING_REWARD                   = 100 # A lump-sum given to the chaser when it docks
         self.SUCCESSFUL_DOCKING_RADIUS        = 0.04 # [m] distance at which the magnetic docking can occur
         self.MAX_DOCKING_ANGLE_PENALTY        = 50 # A penalty given to the chaser, upon docking, for having an angle when docking. The penalty is 0 upon perfect docking and MAX_DOCKING_ANGLE_PENALTY upon perfectly bad docking
-        self.DOCKING_EE_VELOCITY_PENALTY      = 0#50 # A penalty given to the chaser, upon docking, for every 1 m/s end-effector collision velocity upon docking
-        self.DOCKING_ANGULAR_VELOCITY_PENALTY = 0#25 # A penalty given to the chaser, upon docking, for every 1 rad/s angular body velocity upon docking
+        self.DOCKING_EE_VELOCITY_PENALTY      = 50 # A penalty given to the chaser, upon docking, for every 1 m/s end-effector collision velocity upon docking
+        self.DOCKING_ANGULAR_VELOCITY_PENALTY = 25 # A penalty given to the chaser, upon docking, for every 1 rad/s angular body velocity upon docking
         self.END_ON_FALL                      = True # end episode on a fall off the table        
         self.FALL_OFF_TABLE_PENALTY           = 100.
         self.CHECK_CHASER_TARGET_COLLISION    = True
@@ -275,7 +275,7 @@ class Environment:
         self.ANGULAR_MOMENTUM_PENALTY         = 50 # Max angular momentum penalty to give...
         self.AT_MAX_ANGULAR_MOMENTUM          = 2 # [kg m^2/s] which is given at this angular momentum
         self.END_ON_ARM_LIMITS                = True # Whether or not to end the episode when an arm link reaches its limit
-        self.ARM_LIMIT_PENALTY                = 5 #[rewards/timestep/link] Penalty for manipulator joints reaching their limits
+        self.ARM_LIMIT_PENALTY                = 0 #[rewards/timestep/link] Penalty for manipulator joints reaching their limits
         
         
         # Some calculations that don't need to be changed
