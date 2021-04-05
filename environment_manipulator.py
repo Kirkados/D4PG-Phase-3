@@ -1596,7 +1596,7 @@ def calculate_coriolis_matrix(chaser_state, t, parameters):
 ##########################################
 ##### Function to animate the motion #####
 ##########################################
-def render(states, actions, instantaneous_reward_log, cumulative_reward_log, critic_distributions, target_critic_distributions, projected_target_distribution, bins, loss_log, episode_number, filename, save_directory):
+def render(states, actions, instantaneous_reward_log, cumulative_reward_log, critic_distributions, target_critic_distributions, projected_target_distribution, bins, loss_log, episode_number, filename, save_directory, time_log):
 
     # Load in a temporary environment, used to grab the physical parameters
     temp_env = Environment()
@@ -1830,7 +1830,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
             reward_text.set_text('Total reward = %.1f' %cumulative_reward_log[frame])
             
             # Update the time text
-            time_text.set_text('Time = %.1f s' %(frame*temp_env.TIMESTEP))
+            time_text.set_text('Time = %.1f s' %(time_log[frame]))
         except:
             pass
             #print("Out of bounds on the action")
