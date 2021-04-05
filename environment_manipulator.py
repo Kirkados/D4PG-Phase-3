@@ -364,7 +364,7 @@ class Environment:
         # Check for collisions
         self.check_collisions()
         # If we are colliding (unfairly) upon a reset, reset the environment again!
-        if self.end_effector_collision or self.forbidden_area_collision or self.chaser_target_collision or self.elbow_target_collision:
+        if self.end_effector_collision or self.forbidden_area_collision or self.chaser_target_collision or self.elbow_target_collision or not(self.chaser_on_table):
             # Reset the environment again!
             self.reset(test_time)        
  
