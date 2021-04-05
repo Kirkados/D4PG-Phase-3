@@ -997,7 +997,7 @@ class Environment:
             reward -= self.ARM_LIMIT_PENALTY*np.sum(self.joints_past_limits)            
         
         # If we've fallen off the table or rotated too much, penalize this behaviour
-        if not(self.chaser_on_table) or np.abs(self.chaser_position[-1]) > 6*np.pi:
+        if (not(self.chaser_on_table) or np.abs(self.chaser_position[-1]) > 6*np.pi) and self.END_ON_FALL:
             reward -= self.FALL_OFF_TABLE_PENALTY
         
         return reward
@@ -1122,7 +1122,7 @@ class Environment:
             return True
 
         # If we've fallen off the table or spun too many times, end the episode
-        if not(self.chaser_on_table) or np.abs(self.chaser_position[-1]) > 6*np.pi:
+        if (not(self.chaser_on_table) or np.abs(self.chaser_position[-1]) > 6*np.pi) and self.END_ON_FALL:
             if self.test_time and self.extra_printing:
                 print("Fell off table!")
             return True
