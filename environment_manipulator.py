@@ -1106,8 +1106,7 @@ class Environment:
         ######################################
         ### Checking if chaser in on table ###
         ######################################
-        chaser_point = Point(self.chaser_position[:-1])
-        self.chaser_on_table = chaser_point.within(self.TABLE_BOUNDARY)                                                            
+        self.chaser_on_table = chaser_polygon.within(self.TABLE_BOUNDARY)                                                            
 
 
     def is_done(self):
