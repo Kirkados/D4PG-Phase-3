@@ -83,7 +83,7 @@ import multiprocessing
 import queue
 from scipy.integrate import odeint # Numerical integrator
 
-# import code # for debugging
+import code # for debugging
 #code.interact(local=dict(globals(), **locals())) # Ctrl+D or Ctrl+Z to continue execution
 
 import shutil
@@ -1492,6 +1492,19 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
 
     # Load in a temporary environment, used to grab the physical parameters
     temp_env = Environment()
+    
+    
+    
+    
+    
+    
+    code.interact(local=dict(globals(), **locals())) # Ctrl+D or Ctrl+Z to continue execution
+    
+    
+    
+    
+    
+    
 
     # Checking if we want the additional reward and value distribution information
     extra_information = temp_env.ADDITIONAL_VALUE_INFO
@@ -1507,6 +1520,18 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     
     # Target positions
     target_x, target_y, target_theta = states[:,12], states[:,13], states[:,14]
+    
+    # Target initial angular velocity
+    target_initial_omega = states[0,17]
+    
+    # Chaser final velocities
+    chaser_final_vx, chaser_final_vy, chaser_final_omega = states[-1,3], states[-1,4], states[-1,5]
+    
+    # Manipulator final angular velocities
+    shoulder_final_theta_dot, elbow_final_theta_dot, wrist_final_theta_dot = states[-1,9], states[-1,10], states[-1,11]
+    
+    # Target final velocities
+    target_final_vx, target_final_vy, target_final_omega = states[-1,15], states[-1,16], states[-1,17]
 
     # Extracting physical properties
     LENGTH = temp_env.LENGTH
@@ -1521,6 +1546,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     DOCKING_PORT_MOUNT_POSITION = temp_env.DOCKING_PORT_MOUNT_POSITION
     DOCKING_PORT_CORNER1_POSITION = temp_env.DOCKING_PORT_CORNER1_POSITION
     DOCKING_PORT_CORNER2_POSITION = temp_env.DOCKING_PORT_CORNER2_POSITION
+    
 
     #################################################
     ### Calculating chaser locations through time ###
@@ -1592,7 +1618,6 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     # Rotating body frame coordinates to inertial frame
     target_body_inertial       = np.matmul(C_Ib_target, target_points_body)     + np.array([target_x, target_y]).T.reshape([-1,2,1])
     target_front_face_inertial = np.matmul(C_Ib_target, target_front_face_body) + np.array([target_x, target_y]).T.reshape([-1,2,1])
-
     
     # Calculating the accelerations for each state through time
     velocities = np.concatenate([states[:,3:6],states[:,9:12]], axis = 1)
@@ -1603,6 +1628,25 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     
     # Adding a row of zeros to the actions for the first timestep
     actions = np.concatenate([np.zeros([1,temp_env.ACTION_SIZE]), actions])
+    
+    
+    # Calculating the final combined angular momentum
+    temp_env.chaser_position = np.array([chaser_x[-1], chaser_y[-1], chaser_theta[-1]])
+    temp_env.arm_angles = np.array([theta_1[-1], theta_2[-1], theta_3[-1]])
+    temp_env.chaser_velocity = np.array([chaser_final_vx, chaser_final_vy, chaser_final_omega])
+    temp_env.arm_angular_rates = np.array([shoulder_final_theta_dot, elbow_final_theta_dot, wrist_final_theta_dot])
+    temp_env.target_position = np.array([target_x[-1], target_y[-1], target_theta[-1]])
+    temp_env.target_velocity = np.array([target_final_vx, target_final_vy, target_final_omega])
+    
+    docked, target_angular_velocity, combined_total_angular_momentum, combined_angular_velocity = temp_env.combined_angular_momentum()
+    
+    
+    
+    
+    code.interact(local=dict(globals(), **locals())) # Ctrl+D or Ctrl+Z to continue execution
+    
+    
+    
 
     #######################
     ### Plotting Motion ###
@@ -1675,20 +1719,25 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
         time_text            = subfig1.text(x = 0.2, y = 0.91, s = '', fontsize = 8, transform=subfig1.transAxes)
         reward_text          = subfig1.text(x = 0.0,  y = 1.02, s = '', fontsize = 8, transform=subfig1.transAxes)
     else:
-        time_text    = subfig1.text(x = 0.03, y = 0.96, s = '', fontsize = 8, transform=subfig1.transAxes)
-        reward_text  = subfig1.text(x = 0.62, y = 0.96, s = '', fontsize = 8, transform=subfig1.transAxes)
-        episode_text = subfig1.text(x = 0.40, y = 1.02, s = '', fontsize = 8, transform=subfig1.transAxes)
+        time_text         = subfig1.text(x = 0.03, y = 0.96, s = '', fontsize = 8, transform=subfig1.transAxes)
+        reward_text       = subfig1.text(x = 0.62, y = 0.96, s = '', fontsize = 8, transform=subfig1.transAxes)
+        angular_rate_text = subfig1.text(x = 0.62, y = 0.90, s = '', fontsize = 8, transform=subfig1.transAxes)
+        angular_rate_text.set_text('Target angular rate = %.1f' %target_initial_omega)
+        episode_text      = subfig1.text(x = 0.40, y = 1.02, s = '', fontsize = 8, transform=subfig1.transAxes)
         episode_text.set_text('Episode ' + str(episode_number))
-        control1_text = subfig1.text(x = 0.01, y = 0.90, s = '', fontsize = 6, transform=subfig1.transAxes)
-        control2_text = subfig1.text(x = 0.01, y = 0.85, s = '', fontsize = 6, transform=subfig1.transAxes)
-        control3_text = subfig1.text(x = 0.01, y = 0.80, s = '', fontsize = 6, transform=subfig1.transAxes)
-        control4_text = subfig1.text(x = 0.01, y = 0.75, s = '', fontsize = 6, transform=subfig1.transAxes)
-        control5_text = subfig1.text(x = 0.01, y = 0.70, s = '', fontsize = 6, transform=subfig1.transAxes)
-        control6_text = subfig1.text(x = 0.01, y = 0.65, s = '', fontsize = 6, transform=subfig1.transAxes)
+        control1_text     = subfig1.text(x = 0.01, y = 0.90, s = '', fontsize = 6, transform=subfig1.transAxes)
+        control2_text     = subfig1.text(x = 0.01, y = 0.85, s = '', fontsize = 6, transform=subfig1.transAxes)
+        control3_text     = subfig1.text(x = 0.01, y = 0.80, s = '', fontsize = 6, transform=subfig1.transAxes)
+        control4_text     = subfig1.text(x = 0.01, y = 0.75, s = '', fontsize = 6, transform=subfig1.transAxes)
+        control5_text     = subfig1.text(x = 0.01, y = 0.70, s = '', fontsize = 6, transform=subfig1.transAxes)
+        control6_text     = subfig1.text(x = 0.01, y = 0.65, s = '', fontsize = 6, transform=subfig1.transAxes)
+        
+        
+        
+
 
     # Function called repeatedly to draw each frame
     def render_one_frame(frame, *fargs):
-        temp_env = fargs[0] # Extract environment from passed args
 
         # Draw the chaser body
         chaser_body.set_data(chaser_body_inertial[frame,0,:], chaser_body_inertial[frame,1,:])
@@ -1710,22 +1759,23 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
         
         
         # Update the control text
-        try:
-            control1_text.set_text('$\ddot{x}$ = %6.3f; true = %6.3f' %(actions[frame,0], accelerations[frame,0]))
-            control2_text.set_text('$\ddot{y}$ = %6.3f; true = %6.3f' %(actions[frame,1], accelerations[frame,1]))
-            control3_text.set_text(r'$\ddot{\theta}$ = %1.3f; true = %6.3f' %(actions[frame,2], accelerations[frame,2]))
-            control4_text.set_text('$\ddot{q_0}$ = %6.3f; true = %6.3f' %(actions[frame,3], accelerations[frame,3]))
-            control5_text.set_text('$\ddot{q_1}$ = %6.3f; true = %6.3f' %(actions[frame,4], accelerations[frame,4]))
-            control6_text.set_text('$\ddot{q_2}$ = %6.3f; true = %6.3f' %(actions[frame,5], accelerations[frame,5]))
-            
-            # Update the reward text
-            reward_text.set_text('Total reward = %.1f' %cumulative_reward_log[frame])
-            
-            # Update the time text
-            time_text.set_text('Time = %.1f s' %(time_log[frame]))
-        except:
-            pass
-            #print("Out of bounds on the action")
+        control1_text.set_text('$\ddot{x}$ = %6.3f; true = %6.3f' %(actions[frame,0], accelerations[frame,0]))
+        control2_text.set_text('$\ddot{y}$ = %6.3f; true = %6.3f' %(actions[frame,1], accelerations[frame,1]))
+        control3_text.set_text(r'$\ddot{\theta}$ = %1.3f; true = %6.3f' %(actions[frame,2], accelerations[frame,2]))
+        control4_text.set_text('$\ddot{q_0}$ = %6.3f; true = %6.3f' %(actions[frame,3], accelerations[frame,3]))
+        control5_text.set_text('$\ddot{q_1}$ = %6.3f; true = %6.3f' %(actions[frame,4], accelerations[frame,4]))
+        control6_text.set_text('$\ddot{q_2}$ = %6.3f; true = %6.3f' %(actions[frame,5], accelerations[frame,5]))
+        
+        # Update the reward text
+        reward_text.set_text('Total reward = %.1f' %cumulative_reward_log[frame])
+        
+        # Update the time text
+        time_text.set_text('Time = %.1f s' %(time_log[frame]))
+        
+        # If we're on the last frame, update the angular rate text
+        if frame == (len(time_log)-1):        
+            angular_rate_text.set_text('Combined angular rate = %.1f' %combined_angular_velocity)
+
 
         
 
@@ -1757,9 +1807,9 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
         return time_text, reward_text, chaser_body, chaser_front_face, target_body, target_front_face, manipulator
 
     # Generate the animation!
-    fargs = [temp_env] # bundling additional arguments
+    #fargs = [temp_env] # bundling additional arguments
     animator = animation.FuncAnimation(figure, render_one_frame, frames = np.linspace(0, len(states)-1, len(states)).astype(int),
-                                       blit = False, fargs = fargs)
+                                       blit = False)#, fargs = fargs)
     """
     frames = the int that is passed to render_one_frame. I use it to selectively plot certain data
     fargs = additional arguments for render_one_frame

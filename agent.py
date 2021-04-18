@@ -396,7 +396,7 @@ class Agent:
             # Logging the number of timesteps, the episode reward, and the final angular momentum (if captured).
             # Ask the environment if we docked, what the target initial angular rate was, and the final combined angular momentum (assuming we docked)
             self.agent_to_env.put((False,))
-            docked, target_angular_velocity, combined_total_angular_momentum = self.env_to_agent.get()
+            docked, target_angular_velocity, combined_total_angular_momentum, combined_angular_velocity = self.env_to_agent.get()
             
             # If we docked, additionally log the combined angular momentum
             if docked:
