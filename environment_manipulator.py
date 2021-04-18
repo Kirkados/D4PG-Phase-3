@@ -286,6 +286,9 @@ class Environment:
         self.LOWER_STATE_BOUND = np.concatenate([self.LOWER_STATE_BOUND, np.tile(self.LOWER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # lower bound for each element of TOTAL_STATE
         self.UPPER_STATE_BOUND = np.concatenate([self.UPPER_STATE_BOUND, np.tile(self.UPPER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # upper bound for each element of TOTAL_STATE        
         self.OBSERVATION_SIZE  = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
+        
+        # Enabling the extra printing
+        self.extra_printing = True
 
 
     ######################################
@@ -300,10 +303,7 @@ class Environment:
         np.random.seed()
                 
         # Resetting the time
-        self.time = 0.
-        
-        # Enabling the extra printing
-        self.extra_printing = True
+        self.time = 0.        
 
         # Logging whether it is test time for this episode
         self.test_time = test_time
@@ -1492,19 +1492,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
 
     # Load in a temporary environment, used to grab the physical parameters
     temp_env = Environment()
-    
-    
-    
-    
-    
-    
-    code.interact(local=dict(globals(), **locals())) # Ctrl+D or Ctrl+Z to continue execution
-    
-    
-    
-    
-    
-    
+    temp_env.reset(False)
 
     # Checking if we want the additional reward and value distribution information
     extra_information = temp_env.ADDITIONAL_VALUE_INFO
@@ -1522,7 +1510,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     target_x, target_y, target_theta = states[:,12], states[:,13], states[:,14]
     
     # Target initial angular velocity
-    target_initial_omega = states[0,17]
+    target_initial_omega = states[0,17]*180/np.pi
     
     # Chaser final velocities
     chaser_final_vx, chaser_final_vy, chaser_final_omega = states[-1,3], states[-1,4], states[-1,5]
@@ -1637,16 +1625,14 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     temp_env.arm_angular_rates = np.array([shoulder_final_theta_dot, elbow_final_theta_dot, wrist_final_theta_dot])
     temp_env.target_position = np.array([target_x[-1], target_y[-1], target_theta[-1]])
     temp_env.target_velocity = np.array([target_final_vx, target_final_vy, target_final_omega])
+    temp_env.update_end_effector_and_docking_locations()
+    temp_env.update_end_effector_location_body_frame()
+    temp_env.update_relative_pose_body_frame()
+    temp_env.check_collisions()
+    # Check if we docked
+    docked = temp_env.docked
     
-    docked, target_angular_velocity, combined_total_angular_momentum, combined_angular_velocity = temp_env.combined_angular_momentum()
-    
-    
-    
-    
-    code.interact(local=dict(globals(), **locals())) # Ctrl+D or Ctrl+Z to continue execution
-    
-    
-    
+    combined_total_angular_momentum, combined_angular_velocity = temp_env.combined_angular_momentum()
 
     #######################
     ### Plotting Motion ###
@@ -1721,8 +1707,8 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     else:
         time_text         = subfig1.text(x = 0.03, y = 0.96, s = '', fontsize = 8, transform=subfig1.transAxes)
         reward_text       = subfig1.text(x = 0.62, y = 0.96, s = '', fontsize = 8, transform=subfig1.transAxes)
-        angular_rate_text = subfig1.text(x = 0.62, y = 0.90, s = '', fontsize = 8, transform=subfig1.transAxes)
-        angular_rate_text.set_text('Target angular rate = %.1f' %target_initial_omega)
+        angular_rate_text = subfig1.text(x = 0.55, y = 0.90, s = '', fontsize = 8, transform=subfig1.transAxes)
+        angular_rate_text.set_text('Target angular rate = %.2f deg/s' %target_initial_omega)
         episode_text      = subfig1.text(x = 0.40, y = 1.02, s = '', fontsize = 8, transform=subfig1.transAxes)
         episode_text.set_text('Episode ' + str(episode_number))
         control1_text     = subfig1.text(x = 0.01, y = 0.90, s = '', fontsize = 6, transform=subfig1.transAxes)
@@ -1773,11 +1759,8 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
         time_text.set_text('Time = %.1f s' %(time_log[frame]))
         
         # If we're on the last frame, update the angular rate text
-        if frame == (len(time_log)-1):        
-            angular_rate_text.set_text('Combined angular rate = %.1f' %combined_angular_velocity)
-
-
-        
+        if frame == (len(time_log)-1) and docked:        
+            angular_rate_text.set_text('Combined angular rate = %.2f deg/s' %combined_angular_velocity)
 
         if extra_information:
             # Updating the instantaneous reward bar graph
