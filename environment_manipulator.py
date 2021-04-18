@@ -259,9 +259,9 @@ class Environment:
         self.SUCCESSFUL_DOCKING_RADIUS             = 0.04 # [m] distance at which the magnetic docking can occur
         self.MAX_DOCKING_ANGLE_PENALTY             = 50 # A penalty given to the chaser, upon docking, for having an angle when docking. The penalty is 0 upon perfect docking and MAX_DOCKING_ANGLE_PENALTY upon perfectly bad docking
         self.DOCKING_EE_VELOCITY_PENALTY           = 50 # A penalty given to the chaser, upon docking, for every 1 m/s end-effector collision velocity upon docking
-        self.ALLOWED_EE_COLLISION_VELOCITY         = 0.2 # [m/s] the end-effector is not penalized if it collides with the docking port at up to this speed.
+        self.ALLOWED_EE_COLLISION_VELOCITY         = 0 # [m/s] the end-effector is not penalized if it collides with the docking port at up to this speed.
         self.DOCKING_ANGULAR_VELOCITY_PENALTY      = 25 # A penalty given to the chaser, upon docking, for every 1 rad/s angular body velocity upon docking
-        self.ALLOWED_EE_COLLISION_ANGULAR_VELOCITY = np.pi/6 # [rad/s] the end-effector is not penalized if it collides with the docking port at up to this angular velocity.
+        self.ALLOWED_EE_COLLISION_ANGULAR_VELOCITY = 0 # [rad/s] the end-effector is not penalized if it collides with the docking port at up to this angular velocity.
         self.END_ON_FALL                           = True # end episode on a fall off the table        
         self.FALL_OFF_TABLE_PENALTY                = 100.
         self.CHECK_CHASER_TARGET_COLLISION         = True
@@ -276,7 +276,7 @@ class Environment:
         self.ANGULAR_MOMENTUM_PENALTY              = 50 # Max angular momentum penalty to give...
         self.AT_MAX_ANGULAR_MOMENTUM               = 2 # [kg m^2/s] which is given at this angular momentum
         self.END_ON_ARM_LIMITS                     = False # Whether or not to end the episode when an arm link reaches its limit
-        self.ARM_LIMIT_PENALTY                     = 0 #[rewards/timestep/link] Penalty for manipulator joints reaching their limits
+        self.ARM_LIMIT_PENALTY                     = 5 #[rewards/timestep/link] Penalty for manipulator joints reaching their limits
         
         
         # Some calculations that don't need to be changed
