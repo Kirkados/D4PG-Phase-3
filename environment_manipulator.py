@@ -195,21 +195,17 @@ class Environment:
         self.MASS     = 16.9478# [kg] for chaser
         self.M1       = 0.3377 # [kg] link mass
         self.M2       = 0.3281 # [kg] link mass
-        self.M3_original       = 0.0111 # [kg] link mass        
+        self.M3       = 0.0111 # [kg] link mass        
         self.A1       = 0.1933 # [m] base of link to centre of mass
         self.B1       = 0.1117 # [m] centre of mass to end of link
         self.A2       = 0.1993 # [m] base of link to centre of mass
         self.B2       = 0.1057 # [m] centre of mass to end of link
-        self.A3_original       = 0.0621 # [m] base of link to centre of mass
+        self.A3       = 0.0621 # [m] base of link to centre of mass
         self.B3       = 0.0159 # [m] centre of mass to end of link
-        #self.INERTIA  = 1/12*self.MASS*(self.LENGTH**2 + self.LENGTH**2) # 0.15 [kg m^2] base inertia
         self.INERTIA = 2.873E-1 # [kg m^2] from Crain and Ulrich
-        #self.INERTIA1 = 1/12*self.M1*(self.A1 + self.B1)**2 # [kg m^2] link inertia
         self.INERTIA1 = 3.750E-3 # [kg m^2] from Crain and Ulrich
-        #self.INERTIA2 = 1/12*self.M2*(self.A2 + self.B2)**2 # [kg m^2] link inertia
-        self.INERTIA2 = 3.413E-3 # [kg m^2] from Crain and Ulrich
-        #self.INERTIA3 = 1/12*self.M3*(self.A3 + self.B3)**2 # [kg m^2] link inertia        
-        self.INERTIA3_original = 5.640E-5 # [kg m^2] from Crain and Ulrich
+        self.INERTIA2 = 3.413E-3 # [kg m^2] from Crain and Ulrich       
+        self.INERTIA3 = 5.640E-5 # [kg m^2] from Crain and Ulrich
         
         # Target Physical Properties
         self.TARGET_MASS = 12.3341 # [kg]
@@ -302,14 +298,6 @@ class Environment:
         """
         # Reset the seed for max randomness
         np.random.seed()
-        
-        # Reset the third link to its original (undocked) mass properties
-        self.M3 = self.M3_original
-        self.A3 = self.A3_original
-        self.INERTIA3 = self.INERTIA3_original
-        self.MAX_JOINT1n2_TORQUE              = 0.02 # [Nm] # Limited by the simulator NOT EXPERIMENT
-        self.MAX_JOINT3_TORQUE                = 0.0002 # [Nm] Limited by the simulator NOT EXPERIMENT
-        self.first_timestep_postcapture = True
                 
         # Resetting the time
         self.time = 0.
@@ -1151,8 +1139,7 @@ class Environment:
         while True:
             # Blocks until the agent passes us an action
             action, *test_time = self.agent_to_env.get()
-            
-            #print(action)
+
 
             if type(action) == bool and action == True:
                 # The signal to reset the environment was received
@@ -1162,65 +1149,8 @@ class Environment:
                 self.env_to_agent.put(self.make_total_state())
                 
             elif type(action) == bool and action == False:
-                # The episode has completed, now simulate a few more frames until the arm comes to rest
-                # Unfortunately, the dynamics have changed. The third manipulator link should now absorb the target's mass and inertia. I believe I can overwrite this here
-                
-                # Change the third link mass properties to its docked form
-                self.M3 = self.M3_original + self.TARGET_MASS
-                self.A3 = (self.M3_original*self.A3_original + self.TARGET_MASS*(self.A3_original + self.B3 + self.DOCKING_PORT_MOUNT_POSITION[1]))/(self.M3_original + self.TARGET_MASS)
-                self.INERTIA3 = self.INERTIA3_original + self.M3_original*np.abs(self.A3_original - self.A3)**2 + self.TARGET_INERTIA + self.TARGET_MASS*(self.A3_original + self.B3 + self.DOCKING_PORT_MOUNT_POSITION[1] - self.A3)**2
-                
-                # Set the link 3 angular velocity equal to the target's
-                if self.first_timestep_postcapture:                        
-                    link3_angular_rate_inertial = self.target_velocity[-1]
-                    link3_angular_rate_body = link3_angular_rate_inertial - self.chaser_velocity[-1] - self.arm_angular_rates[0] - self.arm_angular_rates[1]
-                    self.arm_angular_rates[-1] = link3_angular_rate_body
-                    self.previous_velocity = np.concatenate([self.chaser_velocity, self.arm_angular_rates]) 
-                    self.first_timestep_postcapture = False
-                
-                # Commanding an acceleration to slow down the arm
-                action = np.concatenate([np.zeros(3), -self.arm_angular_rates/3])
-                self.MAX_JOINT1n2_TORQUE = 0.02
-                self.MAX_JOINT3_TORQUE = 0.1
-                _, _ = self.step(action)
-                
-                # Force the target to be attached to the end-effector
-                x, y, theta                           = self.chaser_position
-                theta_1, theta_2, theta_3             = self.arm_angles
-        
-                x_ee = x + self.B0*np.cos(self.PHI + theta) + (self.A1 + self.B1)*np.cos(np.pi/2 + theta + theta_1) + \
-                       (self.A2 + self.B2)*np.cos(np.pi/2 + theta + theta_1 + theta_2) + \
-                       (self.A3_original + self.B3)*np.cos(np.pi/2 + theta + theta_1 + theta_2 + theta_3)                                   
-                y_ee = y + self.B0*np.sin(self.PHI + theta) + (self.A1 + self.B1)*np.sin(np.pi/2 + theta + theta_1) + \
-                       (self.A2 + self.B2)*np.sin(np.pi/2 + theta + theta_1 + theta_2) + \
-                       (self.A3_original + self.B3)*np.sin(np.pi/2 + theta + theta_1 + theta_2 + theta_3)
-                
-                ##########################
-                ## Docking port Section ##
-                ##########################
-                # Make rotation matrix
-                C_Ib_ee = self.make_C_bI(self.chaser_position[-1] + np.sum(self.arm_angles)).T
-                
-                # Position in Inertial = Body position (inertial) + C_Ib * EE position in body
-                docking_port_position_wrt_ee_inertial = np.matmul(C_Ib_ee, self.DOCKING_PORT_MOUNT_POSITION)
-                
-                # Updates the position of the end-effector in the Inertial frame
-                end_effector_position_inertial = np.array([x_ee, y_ee])
-                self.target_position[:-1] = end_effector_position_inertial + docking_port_position_wrt_ee_inertial
-                self.target_position[-1] = self.chaser_position[-1] + np.sum(self.arm_angles) + np.pi
-                
-                # Disabling some of the success messages at this time
-                self.extra_printing = False
-                
-                #print("Continuing to simulate until the arm stops. Rates: %.3f, %.3f, %.3f, Norm: %.3f" %(self.arm_angular_rates[0],self.arm_angular_rates[1],self.arm_angular_rates[2], np.linalg.norm(self.arm_angular_rates)))
-                
-                if np.linalg.norm(self.arm_angular_rates) < 0.05:
-                    done2 = True
-                else:
-                    done2 = False
-                    
-                # Return (TOTAL_STATE, _, done)
-                self.env_to_agent.put((self.make_total_state(), 0, done2))
+                # A signal to return if we docked, the target angular rate, and the combined angular momentum was received
+                self.env_to_agent.put((self.docked, self.target_velocity[-1], self.combined_angular_momentum()))
 
             else:
                 
@@ -1586,7 +1516,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     B1     = temp_env.B1
     A2     = temp_env.A2
     B2     = temp_env.B2
-    A3     = temp_env.A3_original
+    A3     = temp_env.A3
     B3     = temp_env.B3
     DOCKING_PORT_MOUNT_POSITION = temp_env.DOCKING_PORT_MOUNT_POSITION
     DOCKING_PORT_CORNER1_POSITION = temp_env.DOCKING_PORT_CORNER1_POSITION

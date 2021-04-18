@@ -62,17 +62,24 @@ class Agent:
     
     def create_summary_functions(self):
         # Logging the timesteps used for each episode for each agent
-        self.timestep_number_placeholder      = tf.placeholder(tf.float32)
-        self.episode_reward_placeholder       = tf.placeholder(tf.float32)
-        timestep_number_summary               = tf.summary.scalar("Agent_" + str(self.n_agent) + "/Number_of_timesteps", self.timestep_number_placeholder)
-        episode_reward_summary                = tf.summary.scalar("Agent_" + str(self.n_agent) + "/Episode_reward", self.episode_reward_placeholder)
-        self.regular_episode_summary          = tf.summary.merge([timestep_number_summary, episode_reward_summary])
+        self.timestep_number_placeholder                       = tf.placeholder(tf.float32)
+        self.episode_reward_placeholder                        = tf.placeholder(tf.float32)
+        self.combined_angular_momentum_if_captured_placeholder = tf.placeholder(tf.float32)
+        timestep_number_summary                                = tf.summary.scalar("Agent_" + str(self.n_agent) + "/Number_of_timesteps", self.timestep_number_placeholder)
+        episode_reward_summary                                 = tf.summary.scalar("Agent_" + str(self.n_agent) + "/Episode_reward", self.episode_reward_placeholder)
+        combined_angular_momentum_if_captured_summary          = tf.summary.scalar("Agent_" + str(self.n_agent) + "/Captured_combined_angular_momentum", self.combined_angular_momentum_if_captured_placeholder)
+        
+        self.regular_episode_summary_docked                    = tf.summary.merge([timestep_number_summary, episode_reward_summary, combined_angular_momentum_if_captured_summary])
+        self.regular_episode_summary_not_docked                = tf.summary.merge([timestep_number_summary, episode_reward_summary])
 
         # If this is agent 1, the agent who will also test performance, additionally log the reward
         if self.n_agent == 1:
-            test_time_episode_reward_summary  = tf.summary.scalar("Test_agent/Episode_reward", self.episode_reward_placeholder)
-            test_time_timestep_number_summary = tf.summary.scalar("Test_agent/Number_of_timesteps", self.timestep_number_placeholder)
-            self.test_time_episode_summary    = tf.summary.merge([test_time_episode_reward_summary, test_time_timestep_number_summary])
+            test_time_episode_reward_summary              = tf.summary.scalar("Test_agent/Episode_reward", self.episode_reward_placeholder)
+            test_time_timestep_number_summary             = tf.summary.scalar("Test_agent/Number_of_timesteps", self.timestep_number_placeholder)
+            combined_angular_momentum_if_captured_summary = tf.summary.scalar("Agent_" + str(self.n_agent) + "/Captured_combined_angular_momentum", self.combined_angular_momentum_if_captured_placeholder) 
+            
+            self.test_time_episode_summary_docked         = tf.summary.merge([test_time_episode_reward_summary, test_time_timestep_number_summary, combined_angular_momentum_if_captured_summary])
+            self.test_time_episode_summary_not_docked     = tf.summary.merge([test_time_episode_reward_summary, test_time_timestep_number_summary])
 
 
     def build_actor(self):
@@ -386,12 +393,28 @@ class Agent:
             ###################################################
             ######## Log training data to tensorboard #########
             ###################################################
-            # Logging the number of timesteps and the episode reward.
-            feed_dict = {self.episode_reward_placeholder:  episode_reward, self.timestep_number_placeholder: timestep_number}
-            if test_time:
-                summary = self.sess.run(self.test_time_episode_summary, feed_dict = feed_dict)
+            # Logging the number of timesteps, the episode reward, and the final angular momentum (if captured).
+            # Ask the environment if we docked, what the target initial angular rate was, and the final combined angular momentum (assuming we docked)
+            self.agent_to_env.put((False,))
+            docked, target_angular_velocity, combined_total_angular_momentum = self.env_to_agent.get()
+            
+            # If we docked, additionally log the combined angular momentum
+            if docked:
+                feed_dict = {self.episode_reward_placeholder: episode_reward, self.timestep_number_placeholder: timestep_number, self.combined_angular_momentum_if_captured_placeholder: combined_total_angular_momentum}
             else:
-                summary = self.sess.run(self.regular_episode_summary,   feed_dict = feed_dict)
+                feed_dict = {self.episode_reward_placeholder: episode_reward, self.timestep_number_placeholder: timestep_number}
+                
+            if test_time:
+                if docked:
+                    summary = self.sess.run(self.test_time_episode_summary_docked,     feed_dict = feed_dict)
+                else:
+                    summary = self.sess.run(self.test_time_episode_summary_not_docked, feed_dict = feed_dict)
+            else:
+                if docked:
+                    summary = self.sess.run(self.regular_episode_summary_docked,     feed_dict = feed_dict)
+                else:
+                    summary = self.sess.run(self.regular_episode_summary_not_docked, feed_dict = feed_dict)
+                    
             self.writer.add_summary(summary, episode_number)
 
             # Increment the episode counter
