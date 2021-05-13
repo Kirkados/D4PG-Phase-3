@@ -160,7 +160,7 @@ class Environment:
         self.INITIAL_ARM_RATES                = np.array([0.0,  0.0, 0.0]) # [rad/s, rad/s, rad/s]
         #self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION/2, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION*2/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
-        self.INITIAL_TARGET_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
+        self.INITIAL_TARGET_VELOCITY          = np.array([0.0,  0.0, 0.09]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
         self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
         self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
