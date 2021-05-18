@@ -27,6 +27,19 @@ from build_neural_networks import BuildActorNetwork
 Deep guidance output in x and y are in the chaser body frame
 """
 
+# Are we testing?
+testing = True
+
+###############################
+### User-defined parameters ###
+###############################
+offset_x = 0 # Docking offset in the body frame
+offset_y = 0 # Docking offset in the body frame
+offset_angle = 0
+
+CALIBRATE_TIMESTEP = False
+
+
 # Do you want the chaser's absolute position to be included in the policy_input?
 CHASER_ABSOLUTE_POSITION = True
 
@@ -144,14 +157,7 @@ class DeepGuidanceModelRunner:
         self.messages_to_deep_guidance = messages_to_deep_guidance
         self.stop_run_flag = stop_run_flag
         self.testing = testing
-        
-        ###############################
-        ### User-defined parameters ###
-        ###############################
-        self.offset_x = 0 # Docking offset in the body frame
-        self.offset_y = 0 # Docking offset in the body frame
-        self.offset_angle = 0
-        
+                
         # Holding the previous position so we know when SPOTNet gives a new update
         self.previousSPOTNet_relative_x = 0.0
 
@@ -225,7 +231,7 @@ class DeepGuidanceModelRunner:
             relative_pose_body = np.matmul(make_C_bI(Pi_red_theta), relative_pose_inertial)
             
             # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_theta_dot, relative_x_b, relative_y_b, relative_theta]
-            policy_input = np.array([Pi_red_x, Pi_red_y, Pi_red_theta, Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_theta, elbow_theta, wrist_theta, shoulder_omega, elbow_omega, wrist_omega, Pi_black_omega, relative_pose_body(0), relative_pose_body(1), relative_pose_body(2)])
+            policy_input = np.array([Pi_red_x, Pi_red_y, Pi_red_theta, Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_theta, elbow_theta, wrist_theta, shoulder_omega, elbow_omega, wrist_omega, Pi_black_omega, relative_pose_body[0] - offset_x, relative_pose_body[1] - offset_y, (Pi_black_theta - Pi_red_theta - offset_angle)%(2*np.pi)])
 
                     
             # Normalizing            
@@ -241,7 +247,9 @@ class DeepGuidanceModelRunner:
             deep_guidance = self.sess.run(self.actor.action_scaled, feed_dict={self.state_placeholder:normalized_policy_input})[0] # [accel_x, accel_y, alpha]
             
             # Rotating the command into the inertial frame
-            deep_guidance[:-1] = np.matmul(make_C_bI(Pi_red_theta).T,deep_guidance[:-1])
+            print(Pi_red_theta, make_C_bI(Pi_red_theta).T, deep_guidance[0:2])
+            deep_guidance[0:2] = np.matmul(make_C_bI(Pi_red_theta).T,deep_guidance[0:2])
+            print("Check this!")
      
             # Commanding constant values in the inertial frame for testing purposes
             if DEBUG_CONTROLLER_WITH_CONSTANT_ACCELERATIONS:                
@@ -259,9 +267,9 @@ class DeepGuidanceModelRunner:
     			# this is in the inertial frame			
 
             # Stopping the command of additional velocity when we are already at our maximum
-            current_velocity = np.concatenate([Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_omega, elbow_omega, wrist_omega])        
-            if not self.CALIBRATE_TIMESTEP:
-                deep_guidance[(np.abs(current_velocity) > self.VELOCITY_LIMIT) & (np.sign(deep_guidance) == np.sign(current_velocity))] = 0
+            current_velocity = np.array([Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_omega, elbow_omega, wrist_omega])        
+            if not CALIBRATE_TIMESTEP:
+                deep_guidance[(np.abs(current_velocity) > Settings.VELOCITY_LIMIT) & (np.sign(deep_guidance) == np.sign(current_velocity))] = 0
                 print("Max velocity exceeded")
 
             # Return commanded action to the Raspberry Pi 3
@@ -302,11 +310,6 @@ class DeepGuidanceModelRunner:
         # Close tensorflow session
         self.sess.close()
 
-
-
-
-# Are we testing?
-testing = False
 
 ##################################################
 #### Start communication with JetsonRepeater #####
