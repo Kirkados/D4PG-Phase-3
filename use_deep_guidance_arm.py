@@ -35,6 +35,9 @@ DEBUG_CONTROLLER_WITH_CONSTANT_ACCELERATIONS = False
 constant_Ax = 0 # [m/s^2] in inertial frame
 constant_Ay = 0 # [m/s^2] in inertial frame
 constant_alpha = 0 # [rad/s^2] in inertial frame
+constant_alpha_shoulder = 0 # [rad/s^2]
+constant_alpha_elbow = 0# [rad/s^2]
+constant_alpha_wrist = 0# [rad/s^2]
 
 def make_C_bI(angle):        
     C_bI = np.array([[ np.cos(angle), np.sin(angle)],
@@ -245,8 +248,8 @@ class DeepGuidanceModelRunner:
                 deep_guidance[0] = constant_Ax # [m/s^2]
                 deep_guidance[1] = constant_Ay # [m/s^2]
                 deep_guidance[2] = constant_alpha # [rad/s^2]
-                deep_guidance[3] = constant_alpha_shoulder # [m/s^2]
-                deep_guidance[4] = constant_alpha_elbow # [m/s^2]
+                deep_guidance[3] = constant_alpha_shoulder # [rad/s^2]
+                deep_guidance[4] = constant_alpha_elbow # [rad/s^2]]
                 deep_guidance[5] = constant_alpha_wrist # [rad/s^2]
 													  
             #################################################################
