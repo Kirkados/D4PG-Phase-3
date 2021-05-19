@@ -40,9 +40,6 @@ offset_angle = 0
 CALIBRATE_TIMESTEP = False
 
 
-# Do you want the chaser's absolute position to be included in the policy_input?
-CHASER_ABSOLUTE_POSITION = True
-
 # Do you want to debug with constant accelerations?
 DEBUG_CONTROLLER_WITH_CONSTANT_ACCELERATIONS = False
 constant_Ax = 0 # [m/s^2] in inertial frame
