@@ -126,16 +126,17 @@ class Environment:
         self.ACTION_SIZE                      = 6 # [x_dot_dot, y_dot_dot, theta_dot_dot, shoulder_theta_dot_dot, elbow_theta_dot_dot, wrist_theta_dot_dot] in the inertial frame (for x and y), in the joint frame for the others.
         self.MAX_X_POSITION                   = 3.5 # [m]
         self.MAX_Y_POSITION                   = 2.4 # [m]
-        self.MAX_VELOCITY                     = 0.5 # [m/s]
-        self.MAX_ANGULAR_VELOCITY             = np.pi/6 # [rad/s] for joints or body
-        self.MAX_LINEAR_ACCELERATION          = 0.02 # [m/s^2]
-        self.MAX_ANGULAR_ACCELERATION         = 0.1 # [rad/s^2]
+        self.MAX_VELOCITY                     = 0.1 # [m/s]
+        self.MAX_ANGULAR_VELOCITY             = 10*np.pi/180 # [rad/s] for joints or body
+        self.MAX_LINEAR_ACCELERATION          = 0.015 # [m/s^2]
+        self.MAX_ANGULAR_ACCELERATION         = 0.04 # [rad/s^2]
+        self.MAX_ARM_ANGULAR_ACCELERATION     = 0.1 # [rad/s^2]
         self.MAX_THRUST                       = 0.5 # [N] Experimental limitation
         self.MAX_BODY_TORQUE                  = 0.064 # [Nm] # Experimental limitation
         self.MAX_JOINT1n2_TORQUE              = 0.02 # [Nm] # Limited by the simulator NOT EXPERIMENT
         self.MAX_JOINT3_TORQUE                = 0.0002 # [Nm] Limited by the simulator NOT EXPERIMENT
-        self.LOWER_ACTION_BOUND               = np.array([-self.MAX_LINEAR_ACCELERATION, -self.MAX_LINEAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
-        self.UPPER_ACTION_BOUND               = np.array([ self.MAX_LINEAR_ACCELERATION,  self.MAX_LINEAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
+        self.LOWER_ACTION_BOUND               = np.array([-self.MAX_LINEAR_ACCELERATION, -self.MAX_LINEAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ARM_ANGULAR_ACCELERATION, -self.MAX_ARM_ANGULAR_ACCELERATION, -self.MAX_ARM_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
+        self.UPPER_ACTION_BOUND               = np.array([ self.MAX_LINEAR_ACCELERATION,  self.MAX_LINEAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ARM_ANGULAR_ACCELERATION,  self.MAX_ARM_ANGULAR_ACCELERATION,  self.MAX_ARM_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
                 
         self.LOWER_STATE_BOUND                = np.array([ 0.0, 0.0, -6*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY,  # Chaser 
                                                           -np.pi/2, -np.pi/2, -np.pi/2, # Shoulder_theta, Elbow_theta, Wrist_theta
