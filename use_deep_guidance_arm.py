@@ -37,9 +37,6 @@ offset_x = 0 # Docking offset in the body frame
 offset_y = 0 # Docking offset in the body frame
 offset_angle = 0
 
-CALIBRATE_TIMESTEP = False
-
-
 # Do you want to debug with constant accelerations?
 DEBUG_CONTROLLER_WITH_CONSTANT_ACCELERATIONS = False
 constant_Ax = 0 # [m/s^2] in inertial frame
@@ -265,9 +262,7 @@ class DeepGuidanceModelRunner:
 
             # Stopping the command of additional velocity when we are already at our maximum
             current_velocity = np.array([Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_omega, elbow_omega, wrist_omega])        
-            if not CALIBRATE_TIMESTEP:
-                deep_guidance[(np.abs(current_velocity) > Settings.VELOCITY_LIMIT) & (np.sign(deep_guidance) == np.sign(current_velocity))] = 0
-                print("Max velocity exceeded")
+            deep_guidance[(np.abs(current_velocity) > Settings.VELOCITY_LIMIT) & (np.sign(deep_guidance) == np.sign(current_velocity))] = 0
 
             # Return commanded action to the Raspberry Pi 3
             if self.testing:
