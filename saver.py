@@ -42,7 +42,7 @@ class Saver:
                 return True
 
             except (ValueError, AttributeError):
-                print("No model found... :(")
+                print("Model: ", most_recent_checkpoint_filename, " not found... :(")
                 return False
         else:
             return False
