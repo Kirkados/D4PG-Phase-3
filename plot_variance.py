@@ -35,8 +35,13 @@ variance = []
 episode_numbers_where_variance_was_calculated = []
 
 for i in range(len(episode_number)):
+    if i < 10:
+        continue
     try:
-        these_data_points = combined_residual_angular_momentum[i-window_size:i]
+        if i - window_size < 0:
+            these_data_points = combined_residual_angular_momentum[0:i]
+        else:
+            these_data_points = combined_residual_angular_momentum[i-window_size:i]
     except:
         print("Too few data points at i = ", str(i))
         continue
