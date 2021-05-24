@@ -92,7 +92,7 @@ for i in range(len(data)):
                                  Pi_black_x, Pi_black_y, Pi_black_theta,    \
                                  Pi_black_Vx, Pi_black_Vy, Pi_black_omega,  \
                                  shoulder_theta, elbow_theta, wrist_theta, \
-                                 shoulder_omega, elbow_omega, wrist_omega = data[i,:]
+                                 shoulder_omega, elbow_omega, wrist_omega, docked = data[i,:]
 
     # Raw total state log
     # [self.chaser_position, self.chaser_velocity, self.arm_angles, self.arm_angular_rates, self.target_position, self.target_velocity, self.end_effector_position, self.end_effector_velocity, self.relative_position_body, self.relative_angle, self.end_effector_position_body, self.end_effector_velocity_body]     

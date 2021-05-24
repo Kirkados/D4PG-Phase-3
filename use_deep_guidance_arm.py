@@ -22,6 +22,9 @@ from collections import deque
 from settings import Settings
 from build_neural_networks import BuildActorNetwork
 
+# Load an environment to use methods from
+environment_file = __import__('environment_' + Settings.ENVIRONMENT) # importing the environment
+
 """
 *# Relative pose expressed in the chaser's body frame; everything else in Inertial frame #*
 Deep guidance output in x and y are in the chaser body frame
@@ -151,12 +154,19 @@ class DeepGuidanceModelRunner:
         self.messages_to_deep_guidance = messages_to_deep_guidance
         self.stop_run_flag = stop_run_flag
         self.testing = testing
+        
+        # Initializing a variable to check if we've docked
+        self.have_we_docked = False
                 
         # Holding the previous position so we know when SPOTNet gives a new update
         self.previousSPOTNet_relative_x = 0.0
+        
+        # Initialize an environment so we can use its methods
+        self.environment = environment_file.Environment()
+        self.environment.reset(False)
 
         # Uncomment this on TF2.0
-        # tf.compat.v1.disable_eager_execution()
+        #tf.compat.v1.disable_eager_execution()
         
         # Clear any old graph
         tf.reset_default_graph()
@@ -215,11 +225,45 @@ class DeepGuidanceModelRunner:
             except IndexError:
                 # Queue was empty, try agian
                 continue
-                        
+                       
+            #############################
+            ### Check if we've docked ###
+            #############################
+            # Rotating the offset from the body frame to the inertial frame
+            offsets_body = np.array([offset_x, offset_y])
+            offsets_inertial = np.matmul(make_C_bI(Pi_red_theta).T, offsets_body)            
+            
+            # Check the reward function based off this state
+            self.environment.chaser_position   = np.array([Pi_red_x + offsets_inertial[0], Pi_red_y + offsets_inertial[1], Pi_red_theta + offset_angle])
+            self.environment.chaser_velocity   = np.array([Pi_red_Vx, Pi_red_Vy, Pi_red_omega])
+            self.environment.target_position   = np.array([Pi_black_x, Pi_black_y, Pi_black_theta])
+            self.environment.target_velocity   = np.array([Pi_black_Vx, Pi_black_Vy, Pi_black_omega])
+            self.environment.arm_angles        = np.array([shoulder_theta, elbow_theta, wrist_theta])
+            self.environment.arm_angular_rates = np.array([shoulder_omega, elbow_omega, wrist_omega])
+            
+            # Get environment to check for collisions
+            self.environment.update_end_effector_and_docking_locations()
+            self.update_end_effector_location_body_frame()
+            self.update_relative_pose_body_frame()
+            self.check_collisions()
+            
+            # Ask the environment whether docking occurred
+            self.have_we_docked = self.environment.docked
+            
+            # Extracting end-effector position and docking port position in the Inertial frame
+            end_effector_position = self.environment.end_effector_position
+            docking_port_position = self.environment.docking_port_position
+            
+            # Calculating relative position between the docking port and the end-effector in the Target's body frame
+            docking_error_inertial = end_effector_position - docking_port_position
+            docking_error_target_body = np.matmul(make_C_bI(Pi_black_theta), docking_error_inertial)
+            print("Distance from cone to end-effector in target body frame: ", docking_error_target_body, " Environment thinks we've docked: ", self.have_we_docked, " with offsets: ", offset_x, offset_y, offset_angle)
+            
+
+            
             #################################
             ### Building the Policy Input ###
             ################################# 
-
             # Calculating the relative X and Y in the chaser's body frame using PhaseSpace
             relative_pose_inertial = np.array([Pi_black_x - Pi_red_x, Pi_black_y - Pi_red_y])
             relative_pose_body = np.matmul(make_C_bI(Pi_red_theta), relative_pose_inertial)
@@ -267,7 +311,7 @@ class DeepGuidanceModelRunner:
                 print(deep_guidance)                
             
             else:
-                deep_guidance_acceleration_signal_to_pi = str(deep_guidance[0]) + "\n" + str(deep_guidance[1]) + "\n" + str(deep_guidance[2]) + "\n" + str(deep_guidance[3]) + "\n" + str(deep_guidance[4]) + "\n" + str(deep_guidance[5]) + "\n"
+                deep_guidance_acceleration_signal_to_pi = str(deep_guidance[0]) + "\n" + str(deep_guidance[1]) + "\n" + str(deep_guidance[2]) + "\n" + str(deep_guidance[3]) + "\n" + str(deep_guidance[4]) + "\n" + str(deep_guidance[5]) + "\n" + str(self.have_we_docked) + "\n" 
                 self.client_socket.send(deep_guidance_acceleration_signal_to_pi.encode())
             
             if counter % 2000 == 0:
@@ -285,7 +329,7 @@ class DeepGuidanceModelRunner:
                                  Pi_black_x, Pi_black_y, Pi_black_theta,    \
                                  Pi_black_Vx, Pi_black_Vy, Pi_black_omega,  \
                                  shoulder_theta, elbow_theta, wrist_theta, \
-                                 shoulder_omega, elbow_omega, wrist_omega])
+                                 shoulder_omega, elbow_omega, wrist_omega, self.have_we_docked])
         
         print("Model gently stopped.")
         
