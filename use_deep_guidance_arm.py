@@ -28,7 +28,7 @@ Deep guidance output in x and y are in the chaser body frame
 """
 
 # Are we testing?
-testing = True
+testing = False
 
 ###############################
 ### User-defined parameters ###
@@ -241,9 +241,7 @@ class DeepGuidanceModelRunner:
             deep_guidance = self.sess.run(self.actor.action_scaled, feed_dict={self.state_placeholder:normalized_policy_input})[0] # [accel_x, accel_y, alpha]
             
             # Rotating the command into the inertial frame
-            print(Pi_red_theta, make_C_bI(Pi_red_theta).T, deep_guidance[0:2])
             deep_guidance[0:2] = np.matmul(make_C_bI(Pi_red_theta).T,deep_guidance[0:2])
-            print("Check this!")
      
             # Commanding constant values in the inertial frame for testing purposes
             if DEBUG_CONTROLLER_WITH_CONSTANT_ACCELERATIONS:                
