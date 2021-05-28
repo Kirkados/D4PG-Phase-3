@@ -36,9 +36,9 @@ testing = False
 ###############################
 ### User-defined parameters ###
 ###############################
-offset_x = 0 # Docking offset in the body frame
-offset_y = 0 # Docking offset in the body frame
-offset_angle = 0
+offset_x = 0 # Position offset of the target in its body frame
+offset_y = 0 # Position offset of the target in its body frame
+offset_angle = 0 # Angle offset of the target in its body frame
 
 # Do you want to debug with constant accelerations?
 DEBUG_CONTROLLER_WITH_CONSTANT_ACCELERATIONS = False
@@ -135,6 +135,14 @@ class MessageParser:
                 # We received a packet from the Pi
                 # input_data_array is: [time, red_x, red_y, red_angle, red_vx, red_vy, red_dangle, black_x, black_y, black_angle, black_vx, black_vy, black_dangle, shoulder_angle, elbow_angle, wrist_angle, shoulder_omega, elbow_omega, wrist_omega]  
                 self.Pi_time, self.Pi_red_x, self.Pi_red_y, self.Pi_red_theta, self.Pi_red_Vx, self.Pi_red_Vy, self.Pi_red_omega, self.Pi_black_x, self.Pi_black_y, self.Pi_black_theta, self.Pi_black_Vx, self.Pi_black_Vy, self.Pi_black_omega, self.shoulder_theta, self.elbow_theta, self.wrist_theta, self.shoulder_omega, self.elbow_omega, self.wrist_omega = data_packet.astype(np.float32)
+                
+                # Apply the offsets to the target
+                offsets_target_body = np.array([offset_x, offset_y])
+                offsets_target_inertial = np.matmul(make_C_bI(self.Pi_black_theta).T, offsets_target_body)
+                self.Pi_black_x = self.Pi_black_x - offsets_target_inertial[0]
+                self.Pi_black_y = self.Pi_black_y - offsets_target_inertial[1]
+                self.Pi_black_theta = self.Pi_black_theta - offset_angle
+                
                 print("Pi Packet! Time: %.1f, Wrist angle: %.1f deg" %(self.Pi_time, self.wrist_theta*180/np.pi))
                 
             # Write the data to the queue for DeepGuidanceModelRunner to use!
@@ -156,7 +164,7 @@ class DeepGuidanceModelRunner:
         self.testing = testing
         
         # Initializing a variable to check if we've docked
-        self.have_we_docked = False
+        self.have_we_docked = 0.
                 
         # Holding the previous position so we know when SPOTNet gives a new update
         self.previousSPOTNet_relative_x = 0.0
@@ -229,12 +237,8 @@ class DeepGuidanceModelRunner:
             #############################
             ### Check if we've docked ###
             #############################
-            # Rotating the offset from the body frame to the inertial frame
-            offsets_body = np.array([offset_x, offset_y])
-            offsets_inertial = np.matmul(make_C_bI(Pi_red_theta).T, offsets_body)            
-            
             # Check the reward function based off this state
-            self.environment.chaser_position   = np.array([Pi_red_x + offsets_inertial[0], Pi_red_y + offsets_inertial[1], Pi_red_theta + offset_angle])
+            self.environment.chaser_position   = np.array([Pi_red_x, Pi_red_y, Pi_red_theta])
             self.environment.chaser_velocity   = np.array([Pi_red_Vx, Pi_red_Vy, Pi_red_omega])
             self.environment.target_position   = np.array([Pi_black_x, Pi_black_y, Pi_black_theta])
             self.environment.target_velocity   = np.array([Pi_black_Vx, Pi_black_Vy, Pi_black_omega])
@@ -243,12 +247,12 @@ class DeepGuidanceModelRunner:
             
             # Get environment to check for collisions
             self.environment.update_end_effector_and_docking_locations()
-            self.update_end_effector_location_body_frame()
-            self.update_relative_pose_body_frame()
-            self.check_collisions()
+            self.environment.update_end_effector_location_body_frame()
+            self.environment.update_relative_pose_body_frame()
+            self.environment.check_collisions()
             
             # Ask the environment whether docking occurred
-            self.have_we_docked = self.environment.docked
+            self.have_we_docked = float(self.environment.docked)
             
             # Extracting end-effector position and docking port position in the Inertial frame
             end_effector_position = self.environment.end_effector_position
@@ -269,7 +273,7 @@ class DeepGuidanceModelRunner:
             relative_pose_body = np.matmul(make_C_bI(Pi_red_theta), relative_pose_inertial)
             
             # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_theta_dot, relative_x_b, relative_y_b, relative_theta]
-            policy_input = np.array([Pi_red_x, Pi_red_y, Pi_red_theta, Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_theta, elbow_theta, wrist_theta, shoulder_omega, elbow_omega, wrist_omega, Pi_black_omega, relative_pose_body[0] - offset_x, relative_pose_body[1] - offset_y, (Pi_black_theta - Pi_red_theta - offset_angle)%(2*np.pi)])
+            policy_input = np.array([Pi_red_x, Pi_red_y, Pi_red_theta, Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_theta, elbow_theta, wrist_theta, shoulder_omega, elbow_omega, wrist_omega, Pi_black_omega, relative_pose_body[0], relative_pose_body[1], (Pi_black_theta - Pi_red_theta)%(2*np.pi)])
 
                     
             # Normalizing            
