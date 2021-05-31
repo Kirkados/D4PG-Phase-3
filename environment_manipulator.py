@@ -123,7 +123,7 @@ class Environment:
         self.IRRELEVANT_STATES                = [12,13,14,15,16,18,19,20,21,25,26,27,28] # [relative position and chaser info + chaser x&y for table falling] indices of states who are irrelevant to the policy network
         #self.IRRELEVANT_STATES                = [0,1, 6, 7, 9,10,12,13,14,15,16,18,19,20,21] # [ee_b_wristangle_relative_pos_body_accels] indices of states who are irrelevant to the policy network
         self.OBSERVATION_SIZE                 = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
-        self.ACTION_SIZE                      = 6 # [x_dot_dot, y_dot_dot, theta_dot_dot, shoulder_theta_dot_dot, elbow_theta_dot_dot, wrist_theta_dot_dot] in the inertial frame (for x and y), in the joint frame for the others.
+        self.ACTION_SIZE                      = 6 # [x_dot_dot, y_dot_dot, theta_dot_dot, shoulder_theta_dot_dot, elbow_theta_dot_dot, wrist_theta_dot_dot] in the body frame for x, y, theta; in the joint frame for the others.
         self.MAX_X_POSITION                   = 3.5 # [m]
         self.MAX_Y_POSITION                   = 2.4 # [m]
         self.MAX_VELOCITY                     = 0.1 # [m/s]
@@ -182,13 +182,14 @@ class Environment:
         self.TIMESTEP                         = 0.2 # [s]
         self.CALIBRATE_TIMESTEP               = False # Forces a predetermined action and prints more information to the screen. Useful in calculating gains and torque limits
         self.CLIP_DURING_CALIBRATION          = True # Whether or not to clip the control forces during calibration
-        self.PREDETERMINED_ACTION             = np.array([0,0,0,0,0,0])
+        self.PREDETERMINED_ACTION             = np.array([0.01,-0.015,0.03,-0.07,0.01,0.1])
         self.DYNAMICS_DELAY                   = 0 # [timesteps of delay] how many timesteps between when an action is commanded and when it is realized
         self.AUGMENT_STATE_WITH_ACTION_LENGTH = 0 # [timesteps] how many timesteps of previous actions should be included in the state. This helps with making good decisions among delayed dynamics.
         self.MAX_NUMBER_OF_TIMESTEPS          = 300# per episode
         self.ADDITIONAL_VALUE_INFO            = False # whether or not to include additional reward and value distribution information on the animations
         self.SKIP_FAILED_ANIMATIONS           = True # Error the program or skip when animations fail?        
-        self.KI                               = [17.0,17.0,0.295,0.02,0.0036,0.00008] # Integral gains for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
+        #self.KI                               = [17.0,17.0,0.295,0.02,0.0036,0.00008] # Integral gains for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
+        self.KI                               = [0,0,0,0,0,0] # [Integral controller is turned off because the feedforward controller is working perfectly] Integral gains for the integral-acceleration controller of the body and arm (x, y, theta, theta1, theta2, theta3)
                                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
         self.LENGTH   = 0.3 # [m] side length
@@ -641,7 +642,7 @@ class Environment:
         ##########################################################
         ### Integral-acceleration controller on the all states ###
         ########################################################## 
-        
+        """
         # Calculate the acceleration error
         acceleration_error = desired_accelerations - current_accelerations
         
@@ -672,6 +673,51 @@ class Environment:
         self.previous_control_effort = control_effort
         # [F_x, F_y, torque, torque1, torque2, torque3]
         return control_effort.reshape([self.ACTION_SIZE,1])
+        """
+        
+        ########################################################
+        ### Integral Controller with Feedfoward Compensation ###
+        ########################################################
+        # Added May 31, 2021, replacing the above integral-only controller
+        
+        # Calculate the acceleration error
+        acceleration_error = desired_accelerations - current_accelerations
+        
+        # If the joint is currently at its limit and the desired acceleration is worsening the problem, set the acceleration error to 0. This will prevent further integral wind-up but not release the current wind-up.
+        acceleration_errors_to_zero = (self.joints_past_limits) & (np.sign(desired_accelerations[3:]) == np.sign(self.arm_angles))
+        acceleration_error[3:][acceleration_errors_to_zero] = 0
+                
+        # Apply the integral controller 
+        control_effort = self.previous_control_effort + self.KI * acceleration_error
+        self.previous_control_effort = np.copy(control_effort)
+        
+        # Apply the feedforward compensation
+        current_chaser_state = self.make_chaser_state()
+        dynamics_parameters = [control_effort, self.LENGTH, self.PHI, self.B0, self.MASS, self.M1, self.M2, self.M3, self.A1, self.B1, self.A2, self.B2, self.A3, self.B3, self.INERTIA, self.INERTIA1, self.INERTIA2, self.INERTIA3]
+        desired_velocities = current_velocity + desired_accelerations*self.TIMESTEP
+        control_effort += np.matmul(calculate_mass_matrix(current_chaser_state, 0, dynamics_parameters), desired_accelerations) + np.matmul(calculate_coriolis_matrix(current_chaser_state, 0, dynamics_parameters), desired_velocities)
+        
+        # Clip commands to ensure they respect the hardware limits
+        limits = np.concatenate([np.tile(self.MAX_THRUST,2), [self.MAX_BODY_TORQUE], np.tile(self.MAX_JOINT1n2_TORQUE,2), [self.MAX_JOINT3_TORQUE]])        
+        
+        # If we are trying to calibrate gains and torque bounds...
+        if self.CALIBRATE_TIMESTEP:
+            #print("Current Accelerations: ", current_accelerations, "Desired Accelerations: ", desired_accelerations, " Unclipped Control Effort: ", control_effort, end = "")
+            if self.CLIP_DURING_CALIBRATION:
+                unclipped = control_effort
+                control_effort = np.clip(control_effort, -limits, limits)
+                #print(" Clipped Control Effort: ", control_effort)
+            else:
+                #print(" ")
+                pass
+            print("Current, Desired, Unclipped, Clipped\n", np.concatenate([current_accelerations.reshape([1,-1]), desired_accelerations.reshape([1,-1]), unclipped.reshape([1, -1]), control_effort.reshape([1,-1])], axis=0))
+        else:
+            control_effort = np.clip(control_effort, -limits, limits)
+            #pass
+            
+        # [F_x, F_y, torque, torque1, torque2, torque3]
+        return control_effort.reshape([self.ACTION_SIZE,1])
+        
     
     def make_jacobian_Jc1(self):
         # This method calculates the jacobian Jc1 for the arm
@@ -1610,14 +1656,18 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     target_front_face_inertial = np.matmul(C_Ib_target, target_front_face_body) + np.array([target_x, target_y]).T.reshape([-1,2,1])
     
     # Calculating the accelerations for each state through time
-    velocities = np.concatenate([states[:,3:6],states[:,9:12]], axis = 1)
+    velocities = np.concatenate([states[:,3:6],states[:,9:12]], axis = 1) # Velocities measured in the inertial frame
     # Numerically differentiating to approximate the derivative
     accelerations = np.diff(velocities, axis = 0)/temp_env.TIMESTEP
     # Add a row of zeros initially to the current acceleartions
     accelerations = np.concatenate([np.zeros([1,temp_env.ACTION_SIZE]), accelerations])
-    
+        
     # Adding a row of zeros to the actions for the first timestep
     actions = np.concatenate([np.zeros([1,temp_env.ACTION_SIZE]), actions])
+    
+    # Rotating the actions from the body frame to the inertial frame
+    for p in range(len(actions)):
+        actions[p,0:2] = np.matmul(C_Ib_chaser[p,:,:], actions[p,0:2])
     
     
     # Calculating the final combined angular momentum
