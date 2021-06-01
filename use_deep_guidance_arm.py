@@ -37,7 +37,7 @@ testing = False
 ### User-defined parameters ###
 ###############################
 offset_x = -0.01 # Position offset of the target in its body frame
-offset_y = -0.00233 # Position offset of the target in its body frame
+offset_y = 0.0 # Position offset of the target in its body frame
 offset_angle = 0 # Angle offset of the target in its body frame
 
 # Do you want to debug with constant accelerations?
@@ -252,7 +252,7 @@ class DeepGuidanceModelRunner:
             self.environment.check_collisions()
             
             # Ask the environment whether docking occurred
-            self.have_we_docked = float(self.environment.docked)
+            self.have_we_docked = np.max([self.have_we_docked, float(self.environment.docked)])
             
             # Extracting end-effector position and docking port position in the Inertial frame
             end_effector_position = self.environment.end_effector_position
