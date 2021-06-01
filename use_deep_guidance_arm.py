@@ -307,8 +307,9 @@ class DeepGuidanceModelRunner:
     			# this is in the inertial frame			
 
             # Stopping the command of additional velocity when we are already at our maximum
-            current_velocity = np.array([Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_omega, elbow_omega, wrist_omega])        
-            deep_guidance[(np.abs(current_velocity) > Settings.VELOCITY_LIMIT) & (np.sign(deep_guidance) == np.sign(current_velocity))] = 0
+            """ This check, among others, has been transferred to Simulink - June 1, 2021 """
+            #current_velocity = np.array([Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_omega, elbow_omega, wrist_omega])        
+            #deep_guidance[(np.abs(current_velocity) > Settings.VELOCITY_LIMIT) & (np.sign(deep_guidance) == np.sign(current_velocity))] = 0
 
             # Return commanded action to the Raspberry Pi 3
             if self.testing:
