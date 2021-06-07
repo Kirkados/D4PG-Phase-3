@@ -127,7 +127,8 @@ class Environment:
         self.MAX_X_POSITION                   = 3.5 # [m]
         self.MAX_Y_POSITION                   = 2.4 # [m]
         self.MAX_VELOCITY                     = 0.1 # [m/s]
-        self.MAX_ANGULAR_VELOCITY             = 10*np.pi/180 # [rad/s] for joints or body
+        self.MAX_BODY_ANGULAR_VELOCITY        = 15*np.pi/180 # [rad/s] for body
+        self.MAX_ARM_ANGULAR_VELOCITY         = 30*np.pi/180 # [rad/s] for joints
         self.MAX_LINEAR_ACCELERATION          = 0.015 # [m/s^2]
         self.MAX_ANGULAR_ACCELERATION         = 0.04 # [rad/s^2]
         self.MAX_ARM_ANGULAR_ACCELERATION     = 0.1 # [rad/s^2]
@@ -138,18 +139,18 @@ class Environment:
         self.LOWER_ACTION_BOUND               = np.array([-self.MAX_LINEAR_ACCELERATION, -self.MAX_LINEAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ARM_ANGULAR_ACCELERATION, -self.MAX_ARM_ANGULAR_ACCELERATION, -self.MAX_ARM_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
         self.UPPER_ACTION_BOUND               = np.array([ self.MAX_LINEAR_ACCELERATION,  self.MAX_LINEAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ARM_ANGULAR_ACCELERATION,  self.MAX_ARM_ANGULAR_ACCELERATION,  self.MAX_ARM_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
                 
-        self.LOWER_STATE_BOUND                = np.array([ 0.0, 0.0, -6*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY,  # Chaser 
+        self.LOWER_STATE_BOUND                = np.array([ 0.0, 0.0, -6*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_BODY_ANGULAR_VELOCITY,  # Chaser 
                                                           -np.pi/2, -np.pi/2, -np.pi/2, # Shoulder_theta, Elbow_theta, Wrist_theta
-                                                          -self.MAX_ANGULAR_VELOCITY, -self.MAX_ANGULAR_VELOCITY, -self.MAX_ANGULAR_VELOCITY, # Shoulder_theta_dot, Elbow_theta_dot, Wrist_theta_dot
-                                                          0.0, 0.0, -6*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_ANGULAR_VELOCITY, # Target
+                                                          -self.MAX_ARM_ANGULAR_VELOCITY, -self.MAX_ARM_ANGULAR_VELOCITY, -self.MAX_ARM_ANGULAR_VELOCITY, # Shoulder_theta_dot, Elbow_theta_dot, Wrist_theta_dot
+                                                          0.0, 0.0, -6*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_BODY_ANGULAR_VELOCITY, # Target
                                                           0.0, 0.0, -3*self.MAX_VELOCITY, -3*self.MAX_VELOCITY, # End-effector
                                                           -self.MAX_X_POSITION, -self.MAX_Y_POSITION, 0, #relative_x_b, relative_y_b, relative_theta,
                                                           -0.688, -0.8, -0.2, -0.2]) #ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s, m, m, rad, m, m, m/s, m/s] // lower bound for each element of TOTAL_STATE
-        self.UPPER_STATE_BOUND                = np.array([ self.MAX_X_POSITION, self.MAX_Y_POSITION, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY,  # Chaser 
+        self.UPPER_STATE_BOUND                = np.array([ self.MAX_X_POSITION, self.MAX_Y_POSITION, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_BODY_ANGULAR_VELOCITY,  # Chaser 
                                                           np.pi/2, np.pi/2, np.pi/2, # Shoulder_theta, Elbow_theta, Wrist_theta
-                                                          self.MAX_ANGULAR_VELOCITY, self.MAX_ANGULAR_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Shoulder_theta_dot, Elbow_theta_dot, Wrist_theta_dot
-                                                          self.MAX_X_POSITION, self.MAX_Y_POSITION, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, # Target
+                                                          self.MAX_ARM_ANGULAR_VELOCITY, self.MAX_ARM_ANGULAR_VELOCITY, self.MAX_ARM_ANGULAR_VELOCITY, # Shoulder_theta_dot, Elbow_theta_dot, Wrist_theta_dot
+                                                          self.MAX_X_POSITION, self.MAX_Y_POSITION, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_BODY_ANGULAR_VELOCITY, # Target
                                                           self.MAX_X_POSITION, self.MAX_Y_POSITION, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY, # End-effector
                                                           self.MAX_X_POSITION, self.MAX_Y_POSITION, 2*np.pi, #relative_x_b, relative_y_b, relative_theta,
                                                           0.688, 0.8, 0.2, 0.2]) #ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b
@@ -161,7 +162,7 @@ class Environment:
         self.INITIAL_ARM_RATES                = np.array([0.0,  0.0, 0.0]) # [rad/s, rad/s, rad/s]
         #self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION/2, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION*2/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
-        self.INITIAL_TARGET_VELOCITY          = np.array([0.0,  0.0, 0.09]) # [m/s, m/s, rad/s]
+        self.INITIAL_TARGET_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
         self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
         self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
@@ -284,7 +285,7 @@ class Environment:
         
         # Some calculations that don't need to be changed
         self.TABLE_BOUNDARY    = Polygon(np.array([[0,0], [self.MAX_X_POSITION, 0], [self.MAX_X_POSITION, self.MAX_Y_POSITION], [0, self.MAX_Y_POSITION], [0,0]]))
-        self.VELOCITY_LIMIT    = np.array([self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_ANGULAR_VELOCITY, 2*self.MAX_ANGULAR_VELOCITY, 3*self.MAX_ANGULAR_VELOCITY, 4*self.MAX_ANGULAR_VELOCITY]) # [m/s, m/s, rad/s] maximum allowable velocity/angular velocity; enforced by the controller
+        self.VELOCITY_LIMIT    = np.array([self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_BODY_ANGULAR_VELOCITY, self.MAX_ARM_ANGULAR_VELOCITY, self.MAX_ARM_ANGULAR_VELOCITY, self.MAX_ARM_ANGULAR_VELOCITY]) # [m/s, m/s, rad/s] maximum allowable velocity/angular velocity; enforced by the controller
         self.ANGLE_LIMIT       = np.pi/2 # Used as a hard limit in the dynamics in order to protect the arm from hitting the chaser
         self.LOWER_STATE_BOUND = np.concatenate([self.LOWER_STATE_BOUND, np.tile(self.LOWER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # lower bound for each element of TOTAL_STATE
         self.UPPER_STATE_BOUND = np.concatenate([self.UPPER_STATE_BOUND, np.tile(self.UPPER_ACTION_BOUND, self.AUGMENT_STATE_WITH_ACTION_LENGTH)]) # upper bound for each element of TOTAL_STATE        
