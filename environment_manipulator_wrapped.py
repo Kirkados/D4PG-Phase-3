@@ -480,7 +480,7 @@ class Environment:
         # relative_x_b, relative_y_b, relative_theta,
         # ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b]
         
-        total_state = np.concatenate([self.chaser_position[:2], self.chaser_position[2] % (2*np.pi), self.chaser_velocity, self.arm_angles, self.arm_angular_rates, self.target_position[:2], self.target_position[2] % (2*np.pi), self.target_velocity, self.end_effector_position, self.end_effector_velocity, self.relative_position_body, self.relative_angle, self.end_effector_position_body, self.end_effector_velocity_body])
+        total_state = np.concatenate([self.chaser_position[:2], np.array([self.chaser_position[2] % (2*np.pi)]), self.chaser_velocity, self.arm_angles, self.arm_angular_rates, self.target_position[:2], np.array([self.target_position[2] % (2*np.pi)]), self.target_velocity, self.end_effector_position, self.end_effector_velocity, self.relative_position_body, self.relative_angle, self.end_effector_position_body, self.end_effector_velocity_body])
         
         return total_state
     
