@@ -480,7 +480,7 @@ class Environment:
         # relative_x_b, relative_y_b, relative_theta,
         # ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b]
         
-        total_state = np.concatenate([self.chaser_position, self.chaser_velocity, self.arm_angles, self.arm_angular_rates, self.target_position, self.target_velocity, self.end_effector_position, self.end_effector_velocity, self.relative_position_body, self.relative_angle, self.end_effector_position_body, self.end_effector_velocity_body])
+        total_state = np.concatenate([self.chaser_position, self.chaser_velocity, self.arm_angles, self.arm_angular_rates, self.target_position, self.target_velocity, self.end_effector_position, self.end_effector_velocity, self.relative_position_inertial, self.relative_angle, self.end_effector_position_body, self.end_effector_velocity_body])
         
         return total_state
     
@@ -493,10 +493,10 @@ class Environment:
         C_bI = self.make_C_bI(chaser_angle)
                 
         # [X,Y] relative position in inertial frame
-        relative_position_inertial = self.target_position[:-1] - self.chaser_position[:-1]    
+        self.relative_position_inertial = self.target_position[:-1] - self.chaser_position[:-1]    
         
         # Rotate it to the body frame and save it
-        self.relative_position_body = np.matmul(C_bI, relative_position_inertial)
+        self.relative_position_body = np.matmul(C_bI, self.relative_position_inertial)
         
         # Relative angle and wrap it to [0, 2*np.pi]
         self.relative_angle = np.array([(self.target_position[-1] - self.chaser_position[-1])%(2*np.pi)])
