@@ -167,8 +167,8 @@ class Environment:
         self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
         self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
         #self.RANDOMIZATION_POSITION           = 0.5 # [m] half-range uniform randomization position """Replaced with individual randomizations in X and Y"""
-        self.RANDOMIZATION_LENGTH_X           = 0.5#3.5/2-0.2 # [m] half-range uniform randomization X position
-        self.RANDOMIZATION_LENGTH_Y           = 0.5#2.4/2-0.2 # [m] half-range uniform randomization Y position
+        self.RANDOMIZATION_LENGTH_X           = 0.05#3.5/2-0.2 # [m] half-range uniform randomization X position
+        self.RANDOMIZATION_LENGTH_Y           = 0.05#2.4/2-0.2 # [m] half-range uniform randomization Y position
         self.RANDOMIZATION_CHASER_VELOCITY    = 0.0 # [m/s] half-range uniform randomization chaser velocity
         self.RANDOMIZATION_CHASER_OMEGA       = 0.0 # [rad/s] half-range uniform randomization chaser omega
         self.RANDOMIZATION_ANGLE              = np.pi # [rad] half-range uniform randomization chaser and target base angle
