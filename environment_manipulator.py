@@ -175,7 +175,7 @@ class Environment:
         self.RANDOMIZATION_ARM_ANGLE          = np.pi/2 # [rad] half-range uniform randomization arm angle
         self.RANDOMIZATION_ARM_RATES          = 0.0 # [rad/s] half-range uniform randomization arm rates
         self.RANDOMIZATION_TARGET_VELOCITY    = 0.0 # [m/s] half-range uniform randomization target velocity
-        self.RANDOMIZATION_TARGET_OMEGA       = 10*np.pi/180# 2*np.pi/30 # [rad/s] half-range uniform randomization target omega
+        self.RANDOMIZATION_TARGET_OMEGA       = 0#10*np.pi/180 # [rad/s] half-range uniform randomization target omega
         self.MIN_V                            = -100.
         self.MAX_V                            =  125.
         self.N_STEP_RETURN                    =   5
