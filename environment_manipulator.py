@@ -110,7 +110,7 @@ class Environment:
         The positions are in inertial frame, unless noted otherwise, but the manipulator angles are in the joint frame.
         
         """
-        self.ON_CEDAR                 = True # False for Graham, Béluga, Niagara, and RCDC
+        self.ON_CEDAR                 = False # False for Graham, Béluga, Niagara, and RCDC
         self.TOTAL_STATE_SIZE         = 29 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot, relative_x_b, relative_y_b, relative_theta, ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b]
         ### Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
         #         TOTAL_STATE is returned from the environment to the agent.
@@ -123,7 +123,7 @@ class Environment:
         self.IRRELEVANT_STATES                = [12,13,14,15,16,18,19,20,21,25,26,27,28] # [relative position and chaser info + chaser x&y for table falling] indices of states who are irrelevant to the policy network
         #self.IRRELEVANT_STATES                = [0,1, 6, 7, 9,10,12,13,14,15,16,18,19,20,21] # [ee_b_wristangle_relative_pos_body_accels] indices of states who are irrelevant to the policy network
         self.OBSERVATION_SIZE                 = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # the size of the observation input to the policy
-        self.ACTION_SIZE                      = 6 # [x_dot_dot, y_dot_dot, theta_dot_dot, shoulder_theta_dot_dot, elbow_theta_dot_dot, wrist_theta_dot_dot] in the body frame for x, y, theta; in the joint frame for the others.
+        self.ACTION_SIZE                      = 6 # [x_dot_dot, y_dot_dot, theta_dot_dot, shoulder_theta_dot_dot, elbow_theta_dot_dot, wrist_theta_dot_dot] in the inertial frame for x, y, theta; in the joint frame for the others.
         self.MAX_X_POSITION                   = 3.5 # [m]
         self.MAX_Y_POSITION                   = 2.4 # [m]
         self.MAX_VELOCITY                     = 0.1 # [m/s]
@@ -1208,8 +1208,8 @@ class Environment:
                     self.action_delay_queue.put(action,False) # puts the current action to the bottom of the stack
                     action = self.action_delay_queue.get(False) # grabs the delayed action and treats it as truth.               
                     
-                # Rotating the [linear acceleration] action from the body frame into the inertial frame
-                action[0:2] = np.matmul(self.make_C_bI(self.chaser_position[-1]).T, action[0:2])
+                # [Removed June 15 2021 -- inertial frame actions are better] Rotating the [linear acceleration] action from the body frame into the inertial frame
+                # action[0:2] = np.matmul(self.make_C_bI(self.chaser_position[-1]).T, action[0:2])
 
                 ################################
                 ##### Step the environment #####
@@ -1665,11 +1665,6 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
         
     # Adding a row of zeros to the actions for the first timestep
     actions = np.concatenate([np.zeros([1,temp_env.ACTION_SIZE]), actions])
-    
-    # Rotating the actions from the body frame to the inertial frame
-    for p in range(len(actions)):
-        actions[p,0:2] = np.matmul(C_Ib_chaser[p,:,:], actions[p,0:2])
-    
     
     # Calculating the final combined angular momentum
     temp_env.chaser_position = np.array([chaser_x[-1], chaser_y[-1], chaser_theta[-1]])
