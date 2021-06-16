@@ -1199,7 +1199,7 @@ class Environment:
                 
             elif type(action) == bool and action == False:
                 # A signal to return if we docked, the target angular rate, and the combined angular momentum was received
-                self.env_to_agent.put((self.docked, self.target_velocity[-1], self.combined_angular_momentum()))
+                self.env_to_agent.put((self.docked, self.target_velocity[-1]*180/np.pi, self.combined_angular_momentum()))
 
             else:
                 
