@@ -129,8 +129,8 @@ class Environment:
         self.MAX_VELOCITY                     = 0.1 # [m/s]
         self.MAX_BODY_ANGULAR_VELOCITY        = 15*np.pi/180 # [rad/s] for body
         self.MAX_ARM_ANGULAR_VELOCITY         = 30*np.pi/180 # [rad/s] for joints
-        self.MAX_LINEAR_ACCELERATION          = 0.015 # [m/s^2]
-        self.MAX_ANGULAR_ACCELERATION         = 0.04 # [rad/s^2]
+        self.MAX_LINEAR_ACCELERATION          = 0.025#0.015 # [m/s^2]
+        self.MAX_ANGULAR_ACCELERATION         = 0.1#0.04 # [rad/s^2]
         self.MAX_ARM_ANGULAR_ACCELERATION     = 0.1 # [rad/s^2]
         self.MAX_THRUST                       = 0.5 # [N] Experimental limitation
         self.MAX_BODY_TORQUE                  = 0.064 # [Nm] # Experimental limitation
