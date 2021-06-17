@@ -126,8 +126,8 @@ class Environment:
         self.ACTION_SIZE                      = 6 # [x_dot_dot, y_dot_dot, theta_dot_dot, shoulder_theta_dot_dot, elbow_theta_dot_dot, wrist_theta_dot_dot] in the inertial frame for x, y, theta; in the joint frame for the others.
         self.MAX_X_POSITION                   = 3.5 # [m]
         self.MAX_Y_POSITION                   = 2.4 # [m]
-        self.MAX_VELOCITY                     = 0.1 # [m/s]
-        self.MAX_BODY_ANGULAR_VELOCITY        = 15*np.pi/180 # [rad/s] for body
+        self.MAX_VELOCITY                     = 0.5#0.1 # [m/s]
+        self.MAX_BODY_ANGULAR_VELOCITY        = 30*np.pi/180# 15*np.pi/180 # [rad/s] for body
         self.MAX_ARM_ANGULAR_VELOCITY         = 30*np.pi/180 # [rad/s] for joints
         self.MAX_LINEAR_ACCELERATION          = 0.025#0.015 # [m/s^2]
         self.MAX_ANGULAR_ACCELERATION         = 0.1#0.04 # [rad/s^2]
