@@ -298,14 +298,11 @@ class DeepGuidanceModelRunner:
             #################################################################
             ### Cap output if we are exceeding the max allowable velocity ###
             #################################################################
-            # Checking whether our velocity is too large AND the acceleration is trying to increase said velocity... in which case we set the desired_linear_acceleration to zero.
-    			# this is in the inertial frame			
-
             # Stopping the command of additional velocity when we are already at our maximum
-            """ This check, among others, has been transferred to Simulink - June 1, 2021 """
-            #current_velocity = np.array([Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_omega, elbow_omega, wrist_omega])        
-            #deep_guidance[(np.abs(current_velocity) > Settings.VELOCITY_LIMIT) & (np.sign(deep_guidance) == np.sign(current_velocity))] = 0
-
+            """ The check for arm velocity exceeding has been transferred to Simulink - June 1, 2021 """
+            current_velocity = np.array([Pi_red_Vx, Pi_red_Vy, Pi_red_omega])               
+            deep_guidance[:len(current_velocity)][(np.abs(current_velocity) > Settings.VELOCITY_LIMIT[:len(current_velocity)]) & (np.sign(deep_guidance[:len(current_velocity)]) == np.sign(current_velocity))] = 0
+                        
             # Return commanded action to the Raspberry Pi 3
             if self.testing:
                 print(deep_guidance)                
