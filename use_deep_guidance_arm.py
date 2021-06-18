@@ -263,22 +263,13 @@ class DeepGuidanceModelRunner:
             docking_error_target_body = np.matmul(make_C_bI(Pi_black_theta), docking_error_inertial)
             print("Distance from cone to end-effector in target body frame: ", docking_error_target_body, " Environment thinks we've docked: ", self.have_we_docked, " with offsets: ", offset_x, offset_y, offset_angle)
             
-
             
             #################################
             ### Building the Policy Input ###
             ################################# 
-            # Calculating the relative X and Y in the chaser's body frame using PhaseSpace
-            relative_pose_inertial = np.array([Pi_black_x - Pi_red_x, Pi_black_y - Pi_red_y])
-            relative_pose_body = np.matmul(make_C_bI(Pi_red_theta), relative_pose_inertial)
+            total_state = self.environment.make_total_state()
+            policy_input = np.delete(total_state, Settings.IRRELEVANT_STATES)
             
-            # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_theta_dot, relative_x_b, relative_y_b, relative_theta]
-            if Settings.ACTIONS_IN_INERTIAL:
-                policy_input = np.array([Pi_red_x, Pi_red_y, Pi_red_theta, Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_theta, elbow_theta, wrist_theta, shoulder_omega, elbow_omega, wrist_omega, Pi_black_omega, relative_pose_inertial[0], relative_pose_inertial[1], (Pi_black_theta - Pi_red_theta)%(2*np.pi)])
-            else:
-                policy_input = np.array([Pi_red_x, Pi_red_y, Pi_red_theta, Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_theta, elbow_theta, wrist_theta, shoulder_omega, elbow_omega, wrist_omega, Pi_black_omega, relative_pose_body[0], relative_pose_body[1], (Pi_black_theta - Pi_red_theta)%(2*np.pi)])
-
-                    
             # Normalizing            
             if Settings.NORMALIZE_STATE:
                 normalized_policy_input = (policy_input - relevant_state_mean)/relevant_half_range
