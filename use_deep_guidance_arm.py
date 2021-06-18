@@ -273,7 +273,10 @@ class DeepGuidanceModelRunner:
             relative_pose_body = np.matmul(make_C_bI(Pi_red_theta), relative_pose_inertial)
             
             # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_theta_dot, relative_x_b, relative_y_b, relative_theta]
-            policy_input = np.array([Pi_red_x, Pi_red_y, Pi_red_theta, Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_theta, elbow_theta, wrist_theta, shoulder_omega, elbow_omega, wrist_omega, Pi_black_omega, relative_pose_body[0], relative_pose_body[1], (Pi_black_theta - Pi_red_theta)%(2*np.pi)])
+            if Settings.ACTIONS_IN_INERTIAL:
+                policy_input = np.array([Pi_red_x, Pi_red_y, Pi_red_theta, Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_theta, elbow_theta, wrist_theta, shoulder_omega, elbow_omega, wrist_omega, Pi_black_omega, relative_pose_inertial[0], relative_pose_inertial[1], (Pi_black_theta - Pi_red_theta)%(2*np.pi)])
+            else:
+                policy_input = np.array([Pi_red_x, Pi_red_y, Pi_red_theta, Pi_red_Vx, Pi_red_Vy, Pi_red_omega, shoulder_theta, elbow_theta, wrist_theta, shoulder_omega, elbow_omega, wrist_omega, Pi_black_omega, relative_pose_body[0], relative_pose_body[1], (Pi_black_theta - Pi_red_theta)%(2*np.pi)])
 
                     
             # Normalizing            
@@ -289,8 +292,9 @@ class DeepGuidanceModelRunner:
             deep_guidance = self.sess.run(self.actor.action_scaled, feed_dict={self.state_placeholder:normalized_policy_input})[0] # [accel_x, accel_y, alpha]
             
             # Rotating the command into the inertial frame
-            deep_guidance[0:2] = np.matmul(make_C_bI(Pi_red_theta).T,deep_guidance[0:2])
-     
+            if not Settings.ACTIONS_IN_INERTIAL:
+                deep_guidance[0:2] = np.matmul(make_C_bI(Pi_red_theta).T,deep_guidance[0:2])
+                     
             # Commanding constant values in the inertial frame for testing purposes
             if DEBUG_CONTROLLER_WITH_CONSTANT_ACCELERATIONS:                
                 deep_guidance[0] = constant_Ax # [m/s^2]

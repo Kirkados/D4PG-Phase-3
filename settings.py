@@ -120,7 +120,8 @@ class Settings:
     MAX_NUMBER_OF_TIMESTEPS          = env.MAX_NUMBER_OF_TIMESTEPS # per episode
     TOTAL_STATE_SIZE                 = env.TOTAL_STATE_SIZE
     AUGMENT_STATE_WITH_ACTION_LENGTH = env.AUGMENT_STATE_WITH_ACTION_LENGTH
-    VELOCITY_LIMIT                   = env.VELOCITY_LIMIT   
+    VELOCITY_LIMIT                   = env.VELOCITY_LIMIT  
+    ACTIONS_IN_INERTIAL              = env.ACTIONS_IN_INERTIAL
     
     # Delete the test environment
     del env

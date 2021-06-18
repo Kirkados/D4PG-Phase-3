@@ -111,6 +111,7 @@ class Environment:
         
         """
         self.ON_CEDAR                 = False # False for Graham, Béluga, Niagara, and RCDC
+        self.ACTIONS_IN_INERTIAL      = True # Are actions being calculated in the inertial frame or body frame?
         self.TOTAL_STATE_SIZE         = 29 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot, relative_x_b, relative_y_b, relative_theta, ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b]
         ### Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
         #         TOTAL_STATE is returned from the environment to the agent.
@@ -1208,8 +1209,9 @@ class Environment:
                     self.action_delay_queue.put(action,False) # puts the current action to the bottom of the stack
                     action = self.action_delay_queue.get(False) # grabs the delayed action and treats it as truth.               
                     
-                # [Removed June 15 2021 -- inertial frame actions are better] Rotating the [linear acceleration] action from the body frame into the inertial frame
-                # action[0:2] = np.matmul(self.make_C_bI(self.chaser_position[-1]).T, action[0:2])
+                # Rotating the [linear acceleration] action from the body frame into the inertial frame only if it is appropriate to do so
+                if not self.ACTIONS_IN_INERTIAL:
+                    action[0:2] = np.matmul(self.make_C_bI(self.chaser_position[-1]).T, action[0:2])
 
                 ################################
                 ##### Step the environment #####
