@@ -17,7 +17,8 @@ class Settings:
 
     RUN_NAME               = 'inertialAcceleration_SPIN_lowRandomization_wrapped_cedar'
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
-    ENVIRONMENT            = 'manipulator' # 'quad1' for Task 1 velocity; 'quad1_accel' for Task 1 accel; 'quad1_runway' for Task 2 accel
+    ENVIRONMENT            = 'manipulator' # uncomment for regular training
+	ENVIRONMENT            = 'fixedICs' # uncomment this option for testing what would have occurred from given initial conditions (also set RESUME_TRAINING to True)
     AGENT                  = '' # '' for Task 1, '_runway' for runway experiment
     RECORD_VIDEO           = True
     VIDEO_RECORD_FREQUENCY = 20 # Multiples of "CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES"
