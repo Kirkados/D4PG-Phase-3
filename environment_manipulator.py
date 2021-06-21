@@ -83,7 +83,7 @@ import multiprocessing
 import queue
 from scipy.integrate import odeint # Numerical integrator
 
-import code # for debugging
+#import code # for debugging
 #code.interact(local=dict(globals(), **locals())) # Ctrl+D or Ctrl+Z to continue execution
 
 import shutil
@@ -140,20 +140,20 @@ class Environment:
         self.LOWER_ACTION_BOUND               = np.array([-self.MAX_LINEAR_ACCELERATION, -self.MAX_LINEAR_ACCELERATION, -self.MAX_ANGULAR_ACCELERATION, -self.MAX_ARM_ANGULAR_ACCELERATION, -self.MAX_ARM_ANGULAR_ACCELERATION, -self.MAX_ARM_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
         self.UPPER_ACTION_BOUND               = np.array([ self.MAX_LINEAR_ACCELERATION,  self.MAX_LINEAR_ACCELERATION,  self.MAX_ANGULAR_ACCELERATION,  self.MAX_ARM_ANGULAR_ACCELERATION,  self.MAX_ARM_ANGULAR_ACCELERATION,  self.MAX_ARM_ANGULAR_ACCELERATION]) # [m/s^2, m/s^2, rad/s^2, rad/s^2, rad/s^2, rad/s^2]
                 
-        self.LOWER_STATE_BOUND                = np.array([ 0.0, 0.0, -6*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_BODY_ANGULAR_VELOCITY,  # Chaser 
+        self.LOWER_STATE_BOUND                = np.array([ 0.0, 0.0, 0.0, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_BODY_ANGULAR_VELOCITY,  # Chaser 
                                                           -np.pi/2, -np.pi/2, -np.pi/2, # Shoulder_theta, Elbow_theta, Wrist_theta
                                                           -self.MAX_ARM_ANGULAR_VELOCITY, -self.MAX_ARM_ANGULAR_VELOCITY, -self.MAX_ARM_ANGULAR_VELOCITY, # Shoulder_theta_dot, Elbow_theta_dot, Wrist_theta_dot
-                                                          0.0, 0.0, -6*np.pi, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_BODY_ANGULAR_VELOCITY, # Target
+                                                          0.0, 0.0, 0.0, -self.MAX_VELOCITY, -self.MAX_VELOCITY, -self.MAX_BODY_ANGULAR_VELOCITY, # Target
                                                           0.0, 0.0, -3*self.MAX_VELOCITY, -3*self.MAX_VELOCITY, # End-effector
-                                                          -self.MAX_X_POSITION, -self.MAX_Y_POSITION, 0, #relative_x_b, relative_y_b, relative_theta,
+                                                          -self.MAX_X_POSITION, -self.MAX_Y_POSITION, 0, #relative_x_i, relative_y_i, relative_theta,
                                                           -0.688, -0.8, -0.2, -0.2]) #ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s, m, m, rad, m, m, m/s, m/s] // lower bound for each element of TOTAL_STATE
-        self.UPPER_STATE_BOUND                = np.array([ self.MAX_X_POSITION, self.MAX_Y_POSITION, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_BODY_ANGULAR_VELOCITY,  # Chaser 
+        self.UPPER_STATE_BOUND                = np.array([ self.MAX_X_POSITION, self.MAX_Y_POSITION, 2*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_BODY_ANGULAR_VELOCITY,  # Chaser 
                                                           np.pi/2, np.pi/2, np.pi/2, # Shoulder_theta, Elbow_theta, Wrist_theta
                                                           self.MAX_ARM_ANGULAR_VELOCITY, self.MAX_ARM_ANGULAR_VELOCITY, self.MAX_ARM_ANGULAR_VELOCITY, # Shoulder_theta_dot, Elbow_theta_dot, Wrist_theta_dot
-                                                          self.MAX_X_POSITION, self.MAX_Y_POSITION, 6*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_BODY_ANGULAR_VELOCITY, # Target
+                                                          self.MAX_X_POSITION, self.MAX_Y_POSITION, 2*np.pi, self.MAX_VELOCITY, self.MAX_VELOCITY, self.MAX_BODY_ANGULAR_VELOCITY, # Target
                                                           self.MAX_X_POSITION, self.MAX_Y_POSITION, 3*self.MAX_VELOCITY, 3*self.MAX_VELOCITY, # End-effector
-                                                          self.MAX_X_POSITION, self.MAX_Y_POSITION, 2*np.pi, #relative_x_b, relative_y_b, relative_theta,
+                                                          self.MAX_X_POSITION, self.MAX_Y_POSITION, 2*np.pi, #relative_x_i, relative_y_i, relative_theta,
                                                           0.688, 0.8, 0.2, 0.2]) #ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s, m, m, rad, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
         #self.INITIAL_CHASER_POSITION          = np.array([self.MAX_X_POSITION/2, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
@@ -481,7 +481,7 @@ class Environment:
         # relative_x_b, relative_y_b, relative_theta,
         # ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b]
         
-        total_state = np.concatenate([self.chaser_position, self.chaser_velocity, self.arm_angles, self.arm_angular_rates, self.target_position, self.target_velocity, self.end_effector_position, self.end_effector_velocity, self.relative_position_inertial, self.relative_angle, self.end_effector_position_body, self.end_effector_velocity_body])
+        total_state = np.concatenate([self.chaser_position[:2], np.array([self.chaser_position[2] % (2*np.pi)]), self.chaser_velocity, self.arm_angles, self.arm_angular_rates, self.target_position[:2], np.array([self.target_position[2] % (2*np.pi)]), self.target_velocity, self.end_effector_position, self.end_effector_velocity, self.relative_position_inertial, self.relative_angle, self.end_effector_position_body, self.end_effector_velocity_body])
         
         return total_state
     
