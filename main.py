@@ -81,12 +81,16 @@ config = tf.ConfigProto()
 config.intra_op_parallelism_threads = 0 # auto-picked by tensorflow yields best results
 config.inter_op_parallelism_threads = 0 # auto-picked by tensorflow yields best results
 
+# Check if we're using the right environment
+if Settings.ENVIRONMENT != 'manipulator' and Settings.RESUME_TRAINING == False:
+    print("You must set RESUME_TRAINING to True in settings.py if you wish to use environment_fixedICs")
+    raise SystemExit
 
 ############################################################
 ##### New run or continuing a partially completed one? #####
 ############################################################
 # If we're continuing a run
-if Settings.RESUME_TRAINING:
+if Settings.RESUME_TRAINING and Settings.ENVIRONMENT == 'manipulator':
     filename                  = '' # Reuse the name too
     starting_episode_number   = np.zeros(Settings.NUMBER_OF_ACTORS, dtype = np.int32) # initializing
     starting_iteration_number = 0 # initializing
@@ -114,6 +118,15 @@ if Settings.RESUME_TRAINING:
         print("\n\nError! Couldn't load in old tensorboard file! Quitting run.\nIf this is a new run, turn off RESUME_TRAINING")
         raise SystemExit
 
+elif Settings.RESUME_TRAINING and Settings.ENVIRONMENT != 'manipulator':
+    # Checking the behaviour from given initial conditions, assume the old filename but don't load in the tensorboard file.
+    filename                  = ''
+    starting_episode_number   = np.ones(Settings.NUMBER_OF_ACTORS, dtype = int) # All actors start at episode 0
+    starting_iteration_number = 1 # learner starts at iteration 0
+    
+    # Set the max number of episodes to 2 so that we stop quickly
+    Settings.NUMBER_OF_EPISODES = 2
+    
 else: # Otherwise, we are starting from scratch
     # Generate a filename using Settings.RUN_NAME with the current timestamp
     filename                  = Settings.RUN_NAME + '-{:%Y-%m-%d_%H-%M}'.format(datetime.datetime.now())
