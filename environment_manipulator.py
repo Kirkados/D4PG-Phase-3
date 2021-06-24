@@ -110,7 +110,7 @@ class Environment:
         The positions are in inertial frame, unless noted otherwise, but the manipulator angles are in the joint frame.
         
         """
-        self.ON_CEDAR                 = True # False for Graham, Béluga, Niagara, and RCDC
+        self.ON_CEDAR                 = False # False for Graham, Béluga, Niagara, and RCDC
         self.ACTIONS_IN_INERTIAL      = True # Are actions being calculated in the inertial frame or body frame?
         self.TOTAL_STATE_SIZE         = 29 # [chaser_x, chaser_y, chaser_theta, chaser_x_dot, chaser_y_dot, chaser_theta_dot, shoulder_theta, elbow_theta, wrist_theta, shoulder_theta_dot, elbow_theta_dot, wrist_theta_dot, target_x, target_y, target_theta, target_x_dot, target_y_dot, target_theta_dot, ee_x, ee_y, ee_x_dot, ee_y_dot, relative_x_b, relative_y_b, relative_theta, ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b]
         ### Note: TOTAL_STATE contains all relevant information describing the problem, and all the information needed to animate the motion
