@@ -19,11 +19,13 @@ class Saver:
         # Save all the tensorflow parameters from this session into a file
         # The file is saved to the directory Settings.MODEL_SAVE_DIRECTORY.
         # It uses the n_iteration in the file name
-
-        print("Saving neural networks at iteration number " + str(n_iteration) + "...")
-
-        os.makedirs(os.path.dirname(Settings.MODEL_SAVE_DIRECTORY + self.filename), exist_ok = True)
-        self.saver.save(self.sess, Settings.MODEL_SAVE_DIRECTORY + self.filename + "/Iteration_" + str(n_iteration) + ".ckpt")
+        if Settings.ENVIRONMENT != 'fixedICs':            
+            print("Saving neural networks at iteration number " + str(n_iteration) + "...")
+    
+            os.makedirs(os.path.dirname(Settings.MODEL_SAVE_DIRECTORY + self.filename), exist_ok = True)
+            self.saver.save(self.sess, Settings.MODEL_SAVE_DIRECTORY + self.filename + "/Iteration_" + str(n_iteration) + ".ckpt")
+        else:
+            print("Skipping saving the networks since we are simulating initial conditions")
 
     def load(self):
         # Try to load in weights to the networks in the current Session.

@@ -63,13 +63,17 @@ class ReplayBuffer():
         return states_batch, actions_batch, rewards_batch, next_states_batch, dones_batch, gammas_batch
     
     def save(self):
-        print("Saving replay buffer with %i samples" %self.how_filled())
-        # Saves the replay buffer to file for a backup
-        with open(Settings.MODEL_SAVE_DIRECTORY + self.filename + '/replay_buffer_dump', 'wb') as pickle_file:
-            try:
-                pickle.dump(self.buffer, pickle_file)
-            except:
-                print("Save failed since the buffer was written to during the save.")
+        
+        if Settings.ENVIRONMENT != 'fixedICs':
+            print("Saving replay buffer with %i samples" %self.how_filled())
+            # Saves the replay buffer to file for a backup
+            with open(Settings.MODEL_SAVE_DIRECTORY + self.filename + '/replay_buffer_dump', 'wb') as pickle_file:
+                try:
+                    pickle.dump(self.buffer, pickle_file)
+                except:
+                    print("Save failed since the buffer was written to during the save.")
+        else:
+            print("Skipping saving the replay buffer since we are simulating initial conditions")
     
     def load(self):
         # Loads the replay buffer from file to continue training
