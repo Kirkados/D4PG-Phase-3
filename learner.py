@@ -302,7 +302,7 @@ class Learner:
                         replay_buffer_dump_flag.set()
 
             # If it's time to log the training performance to TensorBoard
-            if self.total_training_iterations % Settings.LOG_TRAINING_PERFORMANCE_EVERY_NUM_ITERATIONS == 0:
+            if self.total_training_iterations % Settings.LOG_TRAINING_PERFORMANCE_EVERY_NUM_ITERATIONS == 0 and Settings.ENVIRONMENT != 'fixedICs':
                 # Logging the mean critic loss across the batch
                 summary = self.sess.run(self.iteration_summary, feed_dict = {self.iteration_loss_placeholder: np.mean(critic_loss)})
                 self.writer.add_summary(summary, self.total_training_iterations)

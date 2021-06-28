@@ -134,7 +134,10 @@ else: # Otherwise, we are starting from scratch
     starting_iteration_number = 1 # learner starts at iteration 0
 
 # Generate writer that will log Tensorboard scalars & graph
-writer = tf.summary.FileWriter(Settings.MODEL_SAVE_DIRECTORY + filename, filename_suffix = Settings.TENSORBOARD_FILE_EXTENSION)
+if Settings.ENVIRONMENT != 'fixedICs':
+    writer = tf.summary.FileWriter(Settings.MODEL_SAVE_DIRECTORY + filename, filename_suffix = Settings.TENSORBOARD_FILE_EXTENSION)
+else:
+    writer = 0
 
 # Saving a copy of the all python files used in this run, for reference
 # Make directory if it doesn't already exist. Only do so if we aren't resuming training
@@ -286,7 +289,8 @@ with tf.Session(config = config) as sess:
     #############################################
 
     # Write the Tensorflow computation graph to file, now that it has been fully built
-    writer.add_graph(sess.graph)
+    if Settings.ENVIRONMENT != 'fixedICs':        
+        writer.add_graph(sess.graph)
     print('Done starting!')
 
 

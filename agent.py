@@ -69,7 +69,6 @@ class Agent:
         self.episode_reward_placeholder                        = tf.placeholder(tf.float32)
         self.combined_angular_momentum_if_captured_placeholder = tf.placeholder(tf.float32)
         self.combined_angular_rate_if_captured_placeholder     = tf.placeholder(tf.float32)
-        self.target_angular_velocity                           = tf.placeholder(tf.float32)
         timestep_number_summary                                = tf.summary.scalar("Agent_" + str(self.n_agent) + "/Number_of_timesteps", self.timestep_number_placeholder)
         episode_reward_summary                                 = tf.summary.scalar("Agent_" + str(self.n_agent) + "/Episode_reward", self.episode_reward_placeholder)
         combined_angular_momentum_if_captured_summary          = tf.summary.scalar("Agent_" + str(self.n_agent) + "/Captured_combined_angular_momentum", self.combined_angular_momentum_if_captured_placeholder)
@@ -84,10 +83,9 @@ class Agent:
             test_time_timestep_number_summary             = tf.summary.scalar("Test_agent/Number_of_timesteps", self.timestep_number_placeholder)
             combined_angular_momentum_if_captured_summary = tf.summary.scalar("Test_agent/Captured_combined_angular_momentum", self.combined_angular_momentum_if_captured_placeholder) 
             combined_angular_rate_if_captured_summary     = tf.summary.scalar("Test_agent/Captured_combined_angular_rate", self.combined_angular_rate_if_captured_placeholder) 
-            test_time_target_angular_velocity_summary     = tf.summary.scalar("Test_agent/Target_initial_angular_velocity", self.target_angular_velocity)
             
-            self.test_time_episode_summary_docked         = tf.summary.merge([test_time_episode_reward_summary, test_time_timestep_number_summary, combined_angular_momentum_if_captured_summary, combined_angular_rate_if_captured_summary, test_time_target_angular_velocity_summary])
-            self.test_time_episode_summary_not_docked     = tf.summary.merge([test_time_episode_reward_summary, test_time_timestep_number_summary, test_time_target_angular_velocity_summary])
+            self.test_time_episode_summary_docked         = tf.summary.merge([test_time_episode_reward_summary, test_time_timestep_number_summary, combined_angular_momentum_if_captured_summary, combined_angular_rate_if_captured_summary])
+            self.test_time_episode_summary_not_docked     = tf.summary.merge([test_time_episode_reward_summary, test_time_timestep_number_summary])
 
 
     def build_actor(self):
@@ -410,9 +408,9 @@ class Agent:
             
             # If we docked, additionally log the combined angular momentum
             if docked:
-                feed_dict = {self.episode_reward_placeholder: episode_reward, self.timestep_number_placeholder: timestep_number, self.combined_angular_momentum_if_captured_placeholder: combined_total_angular_momentum, self.combined_angular_rate_if_captured_placeholder: combined_angular_velocity, self.target_angular_velocity: target_angular_velocity}
+                feed_dict = {self.episode_reward_placeholder: episode_reward, self.timestep_number_placeholder: timestep_number, self.combined_angular_momentum_if_captured_placeholder: combined_total_angular_momentum, self.combined_angular_rate_if_captured_placeholder: combined_angular_velocity}
             else:
-                feed_dict = {self.episode_reward_placeholder: episode_reward, self.timestep_number_placeholder: timestep_number, self.target_angular_velocity: target_angular_velocity}
+                feed_dict = {self.episode_reward_placeholder: episode_reward, self.timestep_number_placeholder: timestep_number}
                 
             if test_time:
                 if docked:
@@ -424,8 +422,9 @@ class Agent:
                     summary = self.sess.run(self.regular_episode_summary_docked,     feed_dict = feed_dict)
                 else:
                     summary = self.sess.run(self.regular_episode_summary_not_docked, feed_dict = feed_dict)
-                    
-            self.writer.add_summary(summary, episode_number)
+            
+            if Settings.ENVIRONMENT != 'fixedICs':
+                self.writer.add_summary(summary, episode_number)
 
             # Increment the episode counter
             episode_number += 1
