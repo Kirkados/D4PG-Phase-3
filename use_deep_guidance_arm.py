@@ -203,7 +203,7 @@ class DeepGuidanceModelRunner:
             print("\nModel successfully loaded!\n")
     
         except (ValueError, AttributeError):
-            print("No model found... quitting :(")
+            print("Model: ", ckpt.model_checkpoint_path, " not found... :(")
             raise SystemExit
         
         print("Done initializing model!")
