@@ -1869,7 +1869,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
         try:
             if temp_env.ON_CEDAR:
                 # Save it to the working directory [have to], then move it to the proper folder
-                animator.save(filename = os.environ['SLURM_TMPDIR'] + '/' + 'episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
+                animator.save(filename = os.environ['SLURM_TMPDIR'] + '/' + 'episode_' + str(episode_number) + '.mp4', fps = 15, dpi = 100)
                 # Make directory if it doesn't already exist
                 os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
                 # Move animation to the proper directory                
@@ -1877,7 +1877,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
                 print("Done!")
             else:
                 # Save it to the working directory [have to], then move it to the proper folder
-                animator.save(filename = filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
+                animator.save(filename = filename + '_episode_' + str(episode_number) + '.mp4', fps = 15, dpi = 100)
                 # Make directory if it doesn't already exist
                 os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
                 # Move animation to the proper directory
@@ -1891,7 +1891,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
                 pass
     else:
         # Save it to the working directory [have to], then move it to the proper folder
-        animator.save(filename = filename + '_episode_' + str(episode_number) + '.mp4', fps = 30, dpi = 100)
+        animator.save(filename = filename + '_episode_' + str(episode_number) + '.mp4', fps = 15, dpi = 100)
         # Make directory if it doesn't already exist
         os.makedirs(os.path.dirname(save_directory + filename + '/videos/'), exist_ok=True)
         # Move animation to the proper directory
