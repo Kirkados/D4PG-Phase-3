@@ -11,8 +11,14 @@ from pyvirtualdisplay import Display # for rendering
 
 # import code # for debugging
 #code.interact(local=dict(globals(), **locals())) # Ctrl+D or Ctrl+Z to continue execution
- 
-from settings import Settings
+try:    
+    from settings import Settings
+except:
+    print("\nYou must use the manipulator environment in settings.py\n\nQuitting")
+    raise SystemExit
+
+assert Settings.ENVIRONMENT == 'manipulator'
+
 environment_file = __import__('environment_' + Settings.ENVIRONMENT) # importing the environment
 
 def make_C_bI(angle):        
@@ -20,12 +26,8 @@ def make_C_bI(angle):
                      [-np.sin(angle), np.cos(angle)]]) # [2, 2]        
     return C_bI
 
-# Check if we're using the right environment
-if Settings.ENVIRONMENT != 'manipulator':
-    print("You must use the 'manipulator' environment in Settings... quitting")
-    raise SystemExit
-    
-    
+
+
 # Generate a virtual display for plotting
 display = Display(visible = False, size = (1400,900))
 display.start()
@@ -33,7 +35,7 @@ display.start()
 #####################################
 ### Load in the experimental data ###
 #####################################
-log_filename = glob.glob('*26-55.txt')[0]
+log_filename = glob.glob('*52-26.txt')[0]
 data = np.load(log_filename)
 print("Data file %s is loaded" %log_filename)
 os.makedirs(log_filename.split('.')[0], exist_ok=True)

@@ -22,6 +22,8 @@ from collections import deque
 from settings import Settings
 from build_neural_networks import BuildActorNetwork
 
+assert Settings.ENVIRONMENT == 'manipulator'
+
 # Load an environment to use methods from
 environment_file = __import__('environment_' + Settings.ENVIRONMENT) # importing the environment
 
