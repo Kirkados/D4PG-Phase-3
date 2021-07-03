@@ -15,7 +15,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'inertialAcceleration_SPIN_lowRandomization_wrapped_rcdc'
+    RUN_NAME               = 'decay1_inertialAcceleration_SPIN_lowRandomization_wrapped_rcdc'
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
     ENVIRONMENT            = 'manipulator' # uncomment for regular training
     #ENVIRONMENT            = 'fixedICs' # uncomment this option for testing what would have occurred from given initial conditions (also set RESUME_TRAINING to True)
@@ -71,7 +71,7 @@ class Settings:
         NOISE_SCALE           = 1 # 1 is best for uniform -> noise scaled to the action range
     else:
         NOISE_SCALE           = 1/3 # standard deviation = 1/3 the action range. Therefore a 3-sigma action will cause full exploration in the worst case scenario
-    NOISE_SCALE_DECAY         =0.999986137152479 # 0.999986137152479 for 50k half-life # 0.9999 for 7k half-life # 1 means the noise does not decay during training
+    NOISE_SCALE_DECAY         = 1#0.999986137152479 # 0.999986137152479 for 50k half-life # 0.9999 for 7k half-life # 1 means the noise does not decay during training
 
 #%%
     ####################################
