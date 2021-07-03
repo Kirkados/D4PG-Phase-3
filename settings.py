@@ -15,7 +15,8 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'sensitivityRevert_a015_alpha1_spin'
+    #RUN_NAME               = 'sensitivityRevert_a015_alpha1_spin_beluga'
+    RUN_NAME               = 'smallBoost_a02_alpha053_spin_cedar'
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
     ENVIRONMENT            = 'manipulator' # uncomment for regular training
     #ENVIRONMENT            = 'fixedICs' # uncomment this option for testing what would have occurred from given initial conditions (also set RESUME_TRAINING to True)
