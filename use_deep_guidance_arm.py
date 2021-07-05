@@ -19,7 +19,11 @@ from collections import deque
 # import code # for debugging
 #code.interact(local=dict(globals(), **locals())) # Ctrl+D or Ctrl+Z to continue execution
 
-from settings import Settings
+try:
+    from settings import Settings
+except:
+    print("You must load the 'manipulator' environment in settings\n\nQuitting.")
+    raise SystemExit
 from build_neural_networks import BuildActorNetwork
 
 assert Settings.ENVIRONMENT == 'manipulator'
