@@ -39,7 +39,7 @@ Deep guidance output in x and y are in the chaser body frame
 # Are we testing?
 testing = False
 
-CHECK_VELOCITY_LIMITS_IN_PYTHON = False
+CHECK_VELOCITY_LIMITS_IN_PYTHON = True
 HARD_CODE_TARGET_SPIN_TO_ZERO = True
 
 
