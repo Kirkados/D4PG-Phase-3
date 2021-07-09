@@ -87,7 +87,7 @@ class Agent:
             test_time_target_angular_velocity_summary     = tf.summary.scalar("Test_agent/Target_initial_angular_velocity", self.target_angular_velocity)
             
             self.test_time_episode_summary_docked         = tf.summary.merge([test_time_episode_reward_summary, test_time_timestep_number_summary, combined_angular_momentum_if_captured_summary, combined_angular_rate_if_captured_summary, test_time_target_angular_velocity_summary])
-            self.test_time_episode_summary_not_docked     = tf.summary.merge([test_time_episode_reward_summary, test_time_timestep_number_summary])
+            self.test_time_episode_summary_not_docked     = tf.summary.merge([test_time_episode_reward_summary, test_time_timestep_number_summary, test_time_target_angular_velocity_summary])
 
 
     def build_actor(self):
