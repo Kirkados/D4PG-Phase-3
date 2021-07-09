@@ -1539,7 +1539,7 @@ def calculate_coriolis_matrix(chaser_state, t, parameters):
 ##########################################
 ##### Function to animate the motion #####
 ##########################################
-def render(states, actions, instantaneous_reward_log, cumulative_reward_log, critic_distributions, target_critic_distributions, projected_target_distribution, bins, loss_log, episode_number, filename, save_directory, time_log):
+def render(states, actions, instantaneous_reward_log, cumulative_reward_log, critic_distributions, target_critic_distributions, projected_target_distribution, bins, loss_log, episode_number, filename, save_directory, time_log, timestep_where_docking_occurred = -1):
 
     # Load in a temporary environment, used to grab the physical parameters
     temp_env = Environment()
@@ -1669,11 +1669,11 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
     actions = np.concatenate([np.zeros([1,temp_env.ACTION_SIZE]), actions])
     
     # Calculating the final combined angular momentum
-    temp_env.chaser_position = np.array([chaser_x[-1], chaser_y[-1], chaser_theta[-1]])
-    temp_env.arm_angles = np.array([theta_1[-1], theta_2[-1], theta_3[-1]])
+    temp_env.chaser_position = np.array([chaser_x[timestep_where_docking_occurred], chaser_y[timestep_where_docking_occurred], chaser_theta[timestep_where_docking_occurred]])
+    temp_env.arm_angles = np.array([theta_1[timestep_where_docking_occurred], theta_2[timestep_where_docking_occurred], theta_3[timestep_where_docking_occurred]])
     temp_env.chaser_velocity = np.array([chaser_final_vx, chaser_final_vy, chaser_final_omega])
     temp_env.arm_angular_rates = np.array([shoulder_final_theta_dot, elbow_final_theta_dot, wrist_final_theta_dot])
-    temp_env.target_position = np.array([target_x[-1], target_y[-1], target_theta[-1]])
+    temp_env.target_position = np.array([target_x[timestep_where_docking_occurred], target_y[timestep_where_docking_occurred], target_theta[timestep_where_docking_occurred]])
     temp_env.target_velocity = np.array([target_final_vx, target_final_vy, target_final_omega])
     temp_env.update_end_effector_and_docking_locations()
     temp_env.update_end_effector_location_body_frame()
@@ -1809,7 +1809,7 @@ def render(states, actions, instantaneous_reward_log, cumulative_reward_log, cri
         time_text.set_text('Time = %.1f s' %(time_log[frame]))
         
         # If we're on the last frame, update the angular rate text
-        if frame == (len(time_log)-1) and docked:        
+        if ((frame == timestep_where_docking_occurred) or (frame == (len(time_log)-1))) and docked:        
             angular_rate_text.set_text('Combined angular rate = %.2f deg/s' %combined_angular_velocity)
 
         if extra_information:

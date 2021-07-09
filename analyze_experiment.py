@@ -35,7 +35,7 @@ display.start()
 #####################################
 ### Load in the experimental data ###
 #####################################
-log_filename = glob.glob('*52-26.txt')[0]
+log_filename = glob.glob('*14-56.txt')[0]
 data = np.load(log_filename)
 print("Data file %s is loaded" %log_filename)
 os.makedirs(log_filename.split('.')[0], exist_ok=True)
@@ -91,6 +91,7 @@ cumulative_reward_log = []
 action_log = []
 cumulative_rewards = 0
 SPOTNet_previous_relative_x = 0.0
+are_we_done = False
 for i in range(len(data)):
     Pi_time, deep_guidance_Ax, deep_guidance_Ay, deep_guidance_alpha_base, \
                                  deep_guidance_alpha_shoulder, deep_guidance_alpha_elbow, deep_guidance_alpha_wrist, \
@@ -119,13 +120,19 @@ for i in range(len(data)):
     environment.update_relative_pose_body_frame()
     environment.check_collisions()
     rewards_this_timestep = environment.reward_function(0)
-    cumulative_rewards += rewards_this_timestep
+
+    # Only add rewards if we aren't done
+    if not are_we_done:
+        cumulative_rewards += rewards_this_timestep
+        if environment.is_done(): # If we are done, this was the last reward that we added
+            are_we_done = True
+            timestep_where_docking_occurred = i
     cumulative_reward_log.append(cumulative_rewards)
     
     action_log.append([deep_guidance_Ax, deep_guidance_Ay, deep_guidance_alpha_base, deep_guidance_alpha_shoulder, deep_guidance_alpha_elbow, deep_guidance_alpha_wrist])
 
 # Render the episode
-environment_file.render(np.asarray(raw_total_state_log), np.asarray(action_log), 0, np.asarray(cumulative_reward_log), 0, 0, 0, 0, 0, 1, log_filename.split('.')[0], '', time_log)
+environment_file.render(np.asarray(raw_total_state_log), np.asarray(action_log), 0, np.asarray(cumulative_reward_log), 0, 0, 0, 0, 0, 1, log_filename.split('.')[0], '', time_log, timestep_where_docking_occurred)
 print("Done!")
 # Close the display
 del environment
