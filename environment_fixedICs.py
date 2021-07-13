@@ -211,66 +211,33 @@ class Environment:
                                 
         # Physical properties (See Fig. 3.1 in Alex Cran's MASc Thesis for definitions)
         self.LENGTH   = 0.3 # [m] side length
-        self.PHI      = 68.2840*np.pi/180#np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
-        self.B0       = 0.2304#(self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
-        self.MASS     = 16.9478# [kg] for chaser
-        self.M1       = 0.3377 # [kg] link mass
-        self.M2       = 0.3281 # [kg] link mass
-        self.M3       = 0.0111 # [kg] link mass        
-        self.A1       = 0.1933 # [m] base of link to centre of mass
-        self.B1       = 0.1117 # [m] centre of mass to end of link
-        self.A2       = 0.1993 # [m] base of link to centre of mass
-        self.B2       = 0.1057 # [m] centre of mass to end of link
-        self.A3       = 0.0621 # [m] base of link to centre of mass
-        self.B3       = 0.0159 # [m] centre of mass to end of link
-        self.INERTIA = 2.873E-1 # [kg m^2] from Crain and Ulrich
-        self.INERTIA1 = 3.750E-3 # [kg m^2] from Crain and Ulrich
-        self.INERTIA2 = 3.413E-3 # [kg m^2] from Crain and Ulrich       
-        self.INERTIA3 = 5.640E-5 # [kg m^2] from Crain and Ulrich
+        self.PHI      = 74.3106*np.pi/180#np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
+        self.B0       = 0.2515#(self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
+        self.MASS     = 11.211# [kg] for chaser
+        self.M1       = 0.3450 # [kg] link mass
+        self.M2       = 0.3350 # [kg] link mass
+        self.M3       = 0.1110 # [kg] link mass        
+        self.A1       = 0.196822 # [m] base of link to centre of mass
+        self.B1       = 0.107678 # [m] centre of mass to end of link
+        self.A2       = 0.198152 # [m] base of link to centre of mass
+        self.B2       = 0.106348 # [m] centre of mass to end of link
+        self.A3       = 0.062097 # [m] base of link to centre of mass
+        self.B3       = 0.025153 # [m] centre of mass to end of link
+        self.INERTIA  = 0.202150 # [kg m^2] from Crain and Ulrich
+        self.INERTIA1 = 0.003704 # [kg m^2] from Crain and Ulrich
+        self.INERTIA2 = 0.003506 # [kg m^2] from Crain and Ulrich       
+        self.INERTIA3 = 0.000106 # [kg m^2] from Crain and Ulrich
         
         # Target Physical Properties
-        self.TARGET_MASS = 12.3341 # [kg]
-        self.TARGET_INERTIA = 0.1850 # [kg m^2 theoretical]
-        
-        # print("** Artificially boosting the chaser mass and inertia for unit testing purposes line 209")
-        # self.INITIAL_CHASER_POSITION          = np.array([1.0, 1.0, 0.0]) # [m, m, rad]
-        # self.INITIAL_CHASER_POSITION          = np.array([1.5, 1.0, 0.0]) # [m, m, rad]
-        # self.INITIAL_CHASER_VELOCITY          = np.array([-0.01225, 0.0, -0.2]) # [m/s, m/s, rad/s]
-        # self.INITIAL_ARM_ANGLES               = np.array([np.pi/1.9, -np.pi/1.9, 0.0]) # [rad, rad, rad]
-        # self.INITIAL_ARM_RATES                = np.array([0.0, 0.0, 0.0]) # [rad/s, rad/s, rad/s]
-        # self.INITIAL_TARGET_POSITION          = np.array([1.16, 2.14, np.pi]) # [m, m, rad]
-        # self.INITIAL_TARGET_VELOCITY          = np.array([0.0, 0.0, np.pi/7]) # [m/s, m/s, rad/s]
-        # self.MASS = 1
-        # self.TARGET_MASS = 1
-        # self.TARGET_INERTIA = 1
-        # self.M1 = 1
-        # self.M2 = 1
-        # self.M3 = 1
-        # self.INERTIA = 1 # [kg m^2] from Crain and Ulrich
-        # self.INERTIA1 = 1 # [kg m^2] from Crain and Ulrich
-        # self.INERTIA2 = 1 # [kg m^2] from Crain and Ulrich    
-        # self.INERTIA3 = 1 # [kg m^2] from Crain and Ulrich
-        # self.LENGTH   = 1 # [m] side length
-        # self.PHI      = 90*np.pi/180#np.pi/2 # [rad] angle of anchor point of arm with respect to spacecraft body frame
-        # self.B0       = (self.LENGTH/2)/np.cos(np.pi/2-self.PHI) # scalar distance from centre of mass to arm attachment point
-        # self.A1       = 0.5 # [m] base of link to centre of mass
-        # self.B1       = 0.5 # [m] centre of mass to end of link
-        # self.A2       = 0.5 # [m] base of link to centre of mass
-        # self.B2       = 0.5 # [m] centre of mass to end of link
-        # self.A3       = 0.5 # [m] base of link to centre of mass
-        # self.B3       = 0.5 # [m] centre of mass to end of link
+        self.TARGET_MASS = 12.0390 # [kg]
+        self.TARGET_INERTIA = 0.225692 # [kg m^2 theoretical]
         
         # Platform physical properties        
         self.LENGTH_RANDOMIZATION          = 0.1 # [m] standard deviation of the LENGTH randomization when domain randomization is performed.        
         self.MASS_RANDOMIZATION            = 1.0 # [kg] standard deviation of the MASS randomization when domain randomization is performed.
-        
-        # Old docking port
-        #self.DOCKING_PORT_MOUNT_POSITION   = np.array([0, self.LENGTH/2]) # position of the docking cone on the target in its body frame
-        #self.DOCKING_PORT_CORNER1_POSITION = self.DOCKING_PORT_MOUNT_POSITION + [ 0.05, 0.1] # position of the docking cone on the target in its body frame
-        #self.DOCKING_PORT_CORNER2_POSITION = self.DOCKING_PORT_MOUNT_POSITION + [-0.05, 0.1] # position of the docking cone on the target in its body frame
-        
+
         # Real docking port
-        self.DOCKING_PORT_MOUNT_POSITION = np.array([0.06944, 0.21007]) # [m] with respect to the centre of mass
+        self.DOCKING_PORT_MOUNT_POSITION = np.array([0.0743, 0.2288]) # [m] with respect to the centre of mass
         self.DOCKING_PORT_CORNER1_POSITION = self.DOCKING_PORT_MOUNT_POSITION + [ 0.0508, 0.0432562] # position of the docking cone on the target in its body frame
         self.DOCKING_PORT_CORNER2_POSITION = self.DOCKING_PORT_MOUNT_POSITION + [-0.0508, 0.0432562] # position of the docking cone on the target in its body frame
         
