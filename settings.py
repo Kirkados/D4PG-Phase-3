@@ -15,7 +15,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'newProperties_smallBoost_DECAY1_a02_alpha053_spin_cedar'
+    RUN_NAME               = '9day_newProperties_newthrust_DECAY1_a02_alpha05_spin_rcdc'
     RESUME_TRAINING        = False # If True, main.py must be run from a previous run's 'code' folder.
     ENVIRONMENT            = 'manipulator' # uncomment for regular training
     #ENVIRONMENT            = 'fixedICs' # uncomment this option for testing what would have occurred from given initial conditions (also set RESUME_TRAINING to True)
@@ -25,7 +25,7 @@ class Settings:
     NOISELESS_AT_TEST_TIME = True # Whether or not to test without action noise (Keep at True unless debugging)
     LEARN_FROM_PIXELS      = False # False = learn from state (fully observed); True = learn from pixels (partially observed)
     USE_GPU_WHEN_AVAILABLE = True # As of Nov 19, 2018, it appears better to use CPU. Re-evaluate again later
-    MAX_WALLTIME           = 60*60*24*4 - 30*60 # [s] max walltime before triggering an end-program
+    MAX_WALLTIME           = 60*60*24*9 - 30*60 # [s] max walltime before triggering an end-program
     
 
 
