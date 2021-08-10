@@ -144,7 +144,11 @@ class MessageParser:
 
                 # We received a packet from the Pi
                 # input_data_array is: [time, red_x, red_y, red_angle, red_vx, red_vy, red_dangle, black_x, black_y, black_angle, black_vx, black_vy, black_dangle, shoulder_angle, elbow_angle, wrist_angle, shoulder_omega, elbow_omega, wrist_omega]  
-                self.Pi_time, self.Pi_red_x, self.Pi_red_y, self.Pi_red_theta, self.Pi_red_Vx, self.Pi_red_Vy, self.Pi_red_omega, self.Pi_black_x, self.Pi_black_y, self.Pi_black_theta, self.Pi_black_Vx, self.Pi_black_Vy, self.Pi_black_omega, self.shoulder_theta, self.elbow_theta, self.wrist_theta, self.shoulder_omega, self.elbow_omega, self.wrist_omega = data_packet.astype(np.float32)
+                try:
+                    self.Pi_time, self.Pi_red_x, self.Pi_red_y, self.Pi_red_theta, self.Pi_red_Vx, self.Pi_red_Vy, self.Pi_red_omega, self.Pi_black_x, self.Pi_black_y, self.Pi_black_theta, self.Pi_black_Vx, self.Pi_black_Vy, self.Pi_black_omega, self.shoulder_theta, self.elbow_theta, self.wrist_theta, self.shoulder_omega, self.elbow_omega, self.wrist_omega = data_packet.astype(np.float32)
+                except:
+                    print("Failed data read from jetsonRepeater.py, continuing...")
+                    continue
                 
                 if HARD_CODE_TARGET_SPIN_TO_ZERO:
                     self.Pi_black_omega = 0.0
@@ -154,9 +158,7 @@ class MessageParser:
                 offsets_target_inertial = np.matmul(make_C_bI(self.Pi_black_theta).T, offsets_target_body)
                 self.Pi_black_x = self.Pi_black_x - offsets_target_inertial[0]
                 self.Pi_black_y = self.Pi_black_y - offsets_target_inertial[1]
-                self.Pi_black_theta = self.Pi_black_theta - offset_angle
-                
-                print("Pi Packet! Time: %.1f, Wrist angle: %.1f deg" %(self.Pi_time, self.wrist_theta*180/np.pi))
+                self.Pi_black_theta = self.Pi_black_theta - offset_angle                                
                 
             # Write the data to the queue for DeepGuidanceModelRunner to use!
             """ This queue is thread-safe. If I append multiple times without popping, the data in the queue is overwritten. Perfect! """
@@ -274,7 +276,7 @@ class DeepGuidanceModelRunner:
             # Calculating relative position between the docking port and the end-effector in the Target's body frame
             docking_error_inertial = end_effector_position - docking_port_position
             docking_error_target_body = np.matmul(make_C_bI(Pi_black_theta), docking_error_inertial)
-            print("Distance from cone to end-effector in target body frame: ", docking_error_target_body, " Environment thinks we've docked: ", self.have_we_docked, " with offsets: ", offset_x, offset_y, offset_angle)
+            print("Distance from cone to end-effector in target body frame: ", docking_error_target_body, " Environment thinks we've docked: ", self.have_we_docked)
             
             
             #################################
