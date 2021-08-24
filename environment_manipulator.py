@@ -156,20 +156,19 @@ class Environment:
                                                           self.MAX_X_POSITION, self.MAX_Y_POSITION, 2*np.pi, #relative_x_i, relative_y_i, relative_theta,
                                                           0.688, 0.8, 0.2, 0.2]) #ee_x_b, ee_y_b, ee_x_dot_b, ee_y_dot_b
                                                           # [m, m, rad, m/s, m/s, rad/s, rad, rad, rad, rad/s, rad/s, rad/s, m, m, rad, m/s, m/s, rad/s, m, m, m/s, m/s, m, m, rad, m, m, m/s, m/s] // Upper bound for each element of TOTAL_STATE
-        self.INITIAL_CHASER_POSITION          = np.array([self.MAX_X_POSITION/2, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
-        #self.INITIAL_CHASER_POSITION          = np.array([self.MAX_X_POSITION/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
+        #self.INITIAL_CHASER_POSITION          = np.array([self.MAX_X_POSITION/2, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
+        self.INITIAL_CHASER_POSITION          = np.array([self.MAX_X_POSITION/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_CHASER_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.INITIAL_ARM_ANGLES               = np.array([0.0,  0.0, 0.0]) # [rad, rad, rad]
         self.INITIAL_ARM_RATES                = np.array([0.0,  0.0, 0.0]) # [rad/s, rad/s, rad/s]
-        self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION/2, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
-        #self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION*2/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
+        #self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION/2, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
+        self.INITIAL_TARGET_POSITION          = np.array([self.MAX_X_POSITION*2/3, self.MAX_Y_POSITION/2, 0.0]) # [m, m, rad]
         self.INITIAL_TARGET_VELOCITY          = np.array([0.0,  0.0, 0.0]) # [m/s, m/s, rad/s]
         self.NORMALIZE_STATE                  = True # Normalize state on each timestep to avoid vanishing gradients
         self.RANDOMIZE_INITIAL_CONDITIONS     = True # whether or not to randomize the initial conditions
         self.RANDOMIZE_DOMAIN                 = False # whether or not to randomize the physical parameters (length, mass, size)
-        #self.RANDOMIZATION_POSITION           = 0.5 # [m] half-range uniform randomization position """Replaced with individual randomizations in X and Y"""
-        self.RANDOMIZATION_LENGTH_X           = 3.5/2-0.3 # [m] half-range uniform randomization X position
-        self.RANDOMIZATION_LENGTH_Y           = 2.4/2-0.3 # [m] half-range uniform randomization Y position
+        self.RANDOMIZATION_LENGTH_X           = 0.05#3.5/2-0.3 # [m] half-range uniform randomization X position
+        self.RANDOMIZATION_LENGTH_Y           = 0.05#2.4/2-0.3 # [m] half-range uniform randomization Y position
         self.RANDOMIZATION_CHASER_VELOCITY    = 0.0 # [m/s] half-range uniform randomization chaser velocity
         self.RANDOMIZATION_CHASER_OMEGA       = 0.0 # [rad/s] half-range uniform randomization chaser omega
         self.RANDOMIZATION_ANGLE              = np.pi # [rad] half-range uniform randomization chaser and target base angle
