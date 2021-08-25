@@ -40,7 +40,10 @@ Deep guidance output in x and y are in the chaser body frame
 testing = False
 
 CHECK_VELOCITY_LIMITS_IN_PYTHON = True
-HARD_CODE_TARGET_SPIN_TO_ZERO = True
+HARD_CODE_TARGET_SPIN = False
+TARGET_SPIN_VALUE = -7*np.pi/180 # [rad/s]
+SUCCESSFUL_DOCKING_RADIUS = 0.04 # [m] [default: 0.04] overwrite the successful docking radius defined in the environment
+
 
 
 ###############################
@@ -150,8 +153,8 @@ class MessageParser:
                     print("Failed data read from jetsonRepeater.py, continuing...")
                     continue
                 
-                if HARD_CODE_TARGET_SPIN_TO_ZERO:
-                    self.Pi_black_omega = 0.0
+                if HARD_CODE_TARGET_SPIN:
+                    self.Pi_black_omega = TARGET_SPIN_VALUE
                 
                 # Apply the offsets to the target
                 offsets_target_body = np.array([offset_x, offset_y])
@@ -188,6 +191,10 @@ class DeepGuidanceModelRunner:
         self.environment = environment_file.Environment()
         self.environment.reset(False)
 
+        # Overwrite the successful docking radius
+        self.environment.SUCCESSFUL_DOCKING_RADIUS = SUCCESSFUL_DOCKING_RADIUS
+        
+        
         # Uncomment this on TF2.0
         #tf.compat.v1.disable_eager_execution()
         
