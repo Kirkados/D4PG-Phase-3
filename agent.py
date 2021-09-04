@@ -371,6 +371,9 @@ class Agent:
 
                 os.makedirs(os.path.dirname(Settings.MODEL_SAVE_DIRECTORY + self.filename + '/trajectories/'), exist_ok=True)
                 np.savetxt(Settings.MODEL_SAVE_DIRECTORY + self.filename + '/trajectories/' + str(episode_number) + '.txt',np.asarray(raw_total_state_log))
+                
+                # Save action log too
+                np.savetxt(Settings.MODEL_SAVE_DIRECTORY + self.filename + '/trajectories/' + str(episode_number) + '_actions.txt',np.asarray(action_log))
 
                 # Ask the learner to tell us the value distributions of the state-action pairs encountered in this episode
                 self.agent_to_learner.put((np.asarray(observation_log), np.asarray(action_log), np.asarray(next_observation_log), np.asarray(instantaneous_reward_log), np.asarray(done_log), np.asarray(discount_factor_log)))
